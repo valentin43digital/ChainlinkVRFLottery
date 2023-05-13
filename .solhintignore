@@ -1,0 +1,5 @@
+node_modules/
+contracts/test
+contracts/lib/chainlink/VRFv2Consumer.sol
+contracts/interfaces/IPancakeRouter01.sol
+contracts/interfaces/IPancakeRouter02.sol
