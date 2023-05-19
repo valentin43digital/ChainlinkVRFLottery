@@ -915,8 +915,6 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		assembly {
 			winnerIdx := mod(_random, holdersLength)
 		}
-		console.log(holdersLength);
-		console.log(winnerIdx);
 		address winner = _holders.array[winnerIdx];
 		uint256 prize = _calculateHoldersLotteryPrize();
 
@@ -938,7 +936,6 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	) private {
 		uint256 winnerIdx;
 		uint256 donatorsLength = _donators.length;
-		console.log(donatorsLength, "donatorsLength");
 		assembly {
 			winnerIdx := mod(_random, donatorsLength)
 		}
