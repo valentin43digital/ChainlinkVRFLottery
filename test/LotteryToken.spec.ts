@@ -8,7 +8,8 @@ import {
     VRFCoordinatorV2Interface,
     IPegSwap,
     IERC20,
-    LinkToken
+    LinkToken,
+    LotteryTokenTest
 } from '../typechain-types';
 
 import {
@@ -30,7 +31,7 @@ describe("Lottery Token tests", () => {
     let pancakeRouter : IPancakeRouter02;
     let pegSwap : IPegSwap;
     let vrfCoordinator : VRFCoordinatorV2Interface;
-    let token : LotteryToken;
+    let token : LotteryTokenTest;
     let link : LinkToken,
     peg_link : IERC20;
     let admin : SignerWithAddress,
@@ -97,7 +98,7 @@ describe("Lottery Token tests", () => {
             donationLotteryTxTrigger: 5,
             minimalDonation: ethers.utils.parseEther("1000"),
         }
-        const LotteryTokenFactory = await ethers.getContractFactory("LotteryToken");
+        const LotteryTokenFactory = await ethers.getContractFactory("LotteryTokenTest");
         token = await LotteryTokenFactory.deploy(
             admin.address,
             vrfCoordinator.address,
