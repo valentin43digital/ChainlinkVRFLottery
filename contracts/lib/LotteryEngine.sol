@@ -28,7 +28,7 @@ import {
 import {
 	VRFConsumerBaseV2
 } from "./chainlink/VRFConsumerBaseV2.sol";
-
+import "hardhat/console.sol";
 /**
 
 */
@@ -56,6 +56,7 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 	) {}
 
 	function _requestRandomWords(uint32 _wordsAmount) internal returns (uint256) {
+		console.log("TRIGGERED", _wordsAmount);
 		return	VRFCoordinatorV2Interface(VRF_COORDINATOR).requestRandomWords(
 			_consumerConfig.gasPriceKey,
 			_consumerConfig.subscriptionId,
@@ -80,24 +81,20 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 				return;
 			}
 
-			if (!_bought[_recipient]) {
+			if (_bought[_recipient]) {
 				return;
 			}
-
 			_bought[_recipient] = true;
-
-			uint256 usdAmount = _TokenPriceInUSD(_amount) / _TUSD_DECIMALS;
+			uint256 usdAmount = _TokenPriceInUSD(_amount) /  _TUSD_DECIMALS;
 			uint256 hundreds = usdAmount / 100;
 			if (hundreds == 0) {
 				return;
 			}
 			uint256 requestId = _requestRandomWords(2);
 			rounds[requestId].lotteryType = LotteryType.JACKPOT;
-			if (hundreds > 10) {
-				rounds[requestId].jackpotEntry = JackpotEntry.USD_1000;
-				return;
-			}
-			rounds[requestId].jackpotEntry = JackpotEntry(uint8(hundreds));
+			rounds[requestId].jackpotEntry = hundreds >= 10 ? 
+				JackpotEntry.USD_1000 : 
+				JackpotEntry(uint8(hundreds));
 			rounds[requestId].jackpotPlayer = _recipient;
 		}
 	}
@@ -114,7 +111,10 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 		}
 
 		uint256 requestId = _requestRandomWords(1);
+		console.logBytes32(bytes32(requestId));
 		rounds[requestId].lotteryType = LotteryType.HOLDERS;
+		_runtimeCounter.resetHoldersLotteryCounter();
+		_counter = _runtimeCounter.store();
 	}
 
 	function _donationsLottery (
@@ -152,12 +152,12 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 			) {
 				return;
 			}
-
 			uint256 requestId = _requestRandomWords(1);
+			console.logBytes32(bytes32(requestId));
 			rounds[requestId].lotteryType = LotteryType.DONATION;
 
 			_runtimeCounter.resetDonationLotteryCounter();
-			delete _donators;
+			_counter = _runtimeCounter.store();
 		}
 	}
 }

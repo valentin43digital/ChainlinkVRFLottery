@@ -7,23 +7,47 @@ import {
 
 abstract contract LotteryEngineConfig {
 
-    LotteryConfig public lotteryConfig;
+    LotteryConfig internal _lotteryConfig;
 
     constructor(
-        LotteryConfig memory _lotteryConfig
+        LotteryConfig memory _config
     ) {
-        lotteryConfig = _lotteryConfig;
+        _lotteryConfig = _config;
     }
 
-    function _switchFirstBuyLotteryFlag (bool flag) internal {
-        lotteryConfig.firstBuyLotteryEnabled = flag;
+    function _switchFirstBuyLotteryFlag (bool _flag) internal {
+        _lotteryConfig.firstBuyLotteryEnabled = _flag;
     }
 
-    function _switchHoldersLotteryFlag (bool flag) internal {
-        lotteryConfig.holdersLotteryEnabled = flag;
+    function _switchHoldersLotteryFlag (bool _flag) internal {
+        _lotteryConfig.holdersLotteryEnabled = _flag;
     }
 
-    function _switchDonationsLotteryFlag (bool flag) internal {
-        lotteryConfig.donationsLotteryEnabled = flag;
+    function _switchDonationsLotteryFlag (bool _flag) internal {
+        _lotteryConfig.donationsLotteryEnabled = _flag;
+    }
+
+    function _setHoldersLotteryTxTrigger (uint64 _txAmount) internal {
+        _lotteryConfig.holdersLotteryTxTrigger = _txAmount;
+    }
+
+    function _setDonationLotteryTxTrigger (uint64 _txAmount) internal {
+        _lotteryConfig.donationLotteryTxTrigger = _txAmount;
+    }
+
+    function _setHoldersLotteryMinBalance (uint256 _minBalance) internal {
+        _lotteryConfig.holdersLotteryMinBalance = _minBalance;
+    }
+
+    function _setDonationAddress (address _donationAddress) internal {
+        _lotteryConfig.donationAddress = _donationAddress;
+    }
+
+    function _setMinimanDonation (uint256 _minimalDonation) internal {
+        _lotteryConfig.minimalDonation = _minimalDonation;
+    }
+
+    function _setMinimumDonationEntries (uint64 _minimumEntries) internal {
+        _lotteryConfig.minimumDonationEntries = _minimumEntries;
     }
 }

@@ -43,25 +43,25 @@ library TypesHelpers {
 
     function burnFeePercent (
 		Fee feeConfig
-	) public pure returns (uint32) {
+	) internal pure returns (uint32) {
 		return uint32(Fee.unwrap(feeConfig) >> 224);
 	}
 
 	function liquidityFeePercent (
 		Fee feeConfig
-	) public pure returns (uint32) {
+	) internal pure returns (uint32) {
 		return uint32(Fee.unwrap(feeConfig) >> 192);
 	}
 
 	function distributionFeePercent (
 		Fee feeConfig
-	) public pure returns (uint32) {
+	) internal pure returns (uint32) {
 		return uint32(Fee.unwrap(feeConfig) >> 160);
 	}
 
 	function treasuryFeePercent (
 		Fee feeConfig
-	) public pure returns (uint32) {
+	) internal pure returns (uint32) {
 		return uint32(Fee.unwrap(feeConfig) >> 128);
 	}
 
@@ -345,5 +345,6 @@ uint256 constant PRECISION = 10_000;
 uint256 constant DONATION_TICKET_TIMEOUT = 3600;
 uint256 constant ONE_WORD = 0x20;
 uint256 constant FOUR_WORDS = 0x80;
+uint256 constant TWENTY_FIVE_BITS = 25;
 Counter constant INCREMENT_DONATION_COUNTER = Counter.wrap((uint256(1) << 128));
 Counter constant INCREMENT_HOLDER_COUNTER = Counter.wrap(1);

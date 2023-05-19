@@ -58,44 +58,4 @@ abstract contract ProtocolConfig {
 	function _setFeeConfig (uint256 _feeConfigRaw) internal {
 		_fees = Fee.wrap(_feeConfigRaw);
 	}
-
-	function burnFeePercent () external view returns (uint32) {
-		return _fees.burnFeePercent();
-	}
-
-	function liquidityFeePercent () external view returns (uint32) {
-		return _fees.liquidityFeePercent ();
-	}
-
-	function distributionFeePercent () external view returns (uint32) {
-		return _fees.distributionFeePercent();
-	}
-
-	function treasuryFeePercent () external view returns (uint32) {
-		return _fees.treasuryFeePercent();
-	}
-
-	function devFeePercent () external view returns (uint32) {
-		return _fees.devFeePercent();
-	}
-
-	function firstBuyLotteryPrizeFeePercent () external view returns (uint32) {
-		return _fees.firstBuyLotteryPrizeFeePercent();
-	}
-
-	function holdersLotteryPrizeFeePercent () external view returns (uint32) {
-		return _fees.holdersLotteryPrizeFeePercent();
-	}
-
-	function donationLotteryPrizeFeePercent () external view returns (uint32) {
-		return _fees.donationLotteryPrizeFeePercent();
-	}
-
-	function isExcludedFromFee (address account) external view returns (bool) {
-		return _isExcludedFromFee[account];
-	}
-
-	function isExcludedFromReward (address account) external view returns (bool) {
-		return _isExcluded[account];
-	}
 }

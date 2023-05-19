@@ -39,4 +39,62 @@ interface IConfiguration {
 	function excludeFromFee (address account) external;
 
 	function includeInFee (address account) external;
+
+	function setHoldersLotteryTxTrigger (uint64 _txAmount) external;
+
+    function setDonationLotteryTxTrigger (uint64 _txAmount) external;
+
+    function setHoldersLotteryMinBalance (uint256 _minBalance) external;
+
+    function setDonationAddress (address _donationAddress) external;
+
+    function setMinimanDonation (uint256 _minimalDonation) external;
+
+    function setMinimumDonationEntries (uint64 _minimumEntries) external;
+
+	function burnFeePercent () external view returns (uint32);
+
+	function liquidityFeePercent () external view returns (uint32);
+
+	function distributionFeePercent () external view returns (uint32);
+
+	function treasuryFeePercent () external view returns (uint32);
+
+	function devFeePercent () external view returns (uint32);
+
+	function firstBuyLotteryPrizeFeePercent () external view returns (uint32);
+
+	function holdersLotteryPrizeFeePercent () external view returns (uint32);
+
+	function donationLotteryPrizeFeePercent () external view returns (uint32);
+
+	function isExcludedFromFee (address account) external view returns (bool);
+
+	function isExcludedFromReward (address account) external view returns (bool);
+
+	function firstBuyLotteryEnabled () external view returns (bool);
+
+    function holdersLotteryEnabled () external view returns (bool);
+
+    function holdersLotteryTxTrigger () external view returns (uint64);
+
+    function holdersLotteryMinBalance () external view returns (uint256);
+
+    function donationAddress () external view returns (address);
+
+    function donationsLotteryEnabled () external view returns (bool);
+
+    function minimumDonationEntries () external view returns (uint64);
+
+    function donationLotteryTxTrigger () external view returns (uint64);
+
+    function minimalDonation () external view returns (uint256);
+
+	function subscriptionId () external view returns (uint64);
+
+	function callbackGasLimit () external view returns (uint32);
+
+	function requestConfirmations () external view returns (uint16);
+
+	function gasPriceKey () external view returns (bytes32);
 }

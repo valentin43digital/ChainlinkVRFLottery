@@ -4,8 +4,8 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomiclabs/hardhat-etherscan";
 import "@typechain/hardhat";
-import "hardhat-gas-reporter";
 import 'hardhat-contract-sizer';
+import 'hardhat-gas-reporter';
 import "solidity-coverage";
 
 dotenv.config();
@@ -36,10 +36,19 @@ const config: HardhatUserConfig = {
 							runs: 1337
 						}
 					}
+				},
+				{
+					version: '0.4.11'
 				}
 			]
 	},
 	networks: {
+		hardhat: {
+            forking: {
+                url: `https://bsc-dataseed.binance.org/`,
+                blockNumber: 28318015
+            }
+        },
 		bsc_testnet: {
 			url: "https://data-seed-prebsc-1-s1.binance.org:8545",
 			chainId: 97,

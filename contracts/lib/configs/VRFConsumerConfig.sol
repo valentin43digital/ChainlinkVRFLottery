@@ -43,20 +43,4 @@ abstract contract VRFConsumerConfig {
 	function _setGasPriceKey (bytes32 _gasPriceKey) internal {
 		_consumerConfig.gasPriceKey =  _gasPriceKey;
 	}
-
-	function subscriptionId () external view returns (uint64) {
-		return _consumerConfig.subscriptionId;
-	}
-
-	function callbackGasLimit () external view returns (uint32) {
-		return _consumerConfig.callbackGasLimit;
-	}
-
-	function requestConfirmations () external view returns (uint16) {
-		return _consumerConfig.requestConfirmations;
-	}
-
-	function gasPriceKey () external view returns (bytes32) {
-		return _consumerConfig.gasPriceKey;
-	}
 }

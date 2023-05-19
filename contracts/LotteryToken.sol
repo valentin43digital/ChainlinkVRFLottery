@@ -20,6 +20,7 @@ import {
 } from "./lib/LotteryEngine.sol";
 
 import {
+	TWENTY_FIVE_BITS,
 	DAY_ONE_LIMIT,
 	DAY_TWO_LIMIT,
 	DAY_THREE_LIMIT,
@@ -31,6 +32,8 @@ import {
 	RandomWords,
 	toRandomWords
 } from "./lib/ConstantsAndTypes.sol";
+
+import "hardhat/console.sol";
 
 contract LotteryToken is LotteryEngine, ILotteryToken {
 
@@ -110,10 +113,10 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	mapping(address => bool) public whitelist;
 	address[] private _excluded;
 
-	uint256 private _tTotal = 1_000_000_000_000_000_000_000;
+	uint256 private _tTotal = 10_000_000_000 * 1e18;
 
 	uint256 public maxTxAmount = 
-		10_000_000_000_000_000_000;
+		10_000_000_000 * 1e18;
 
 	uint256 private _rTotal = (MAX_UINT256 - (MAX_UINT256 % _tTotal));
 	uint256 private _tFeeTotal;
@@ -137,7 +140,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			_lConfig
 		)
 	{
-
+		
 		_rOwned[_mintSupplyTo] = _rTotal;
 		emit Transfer(address(0), _mintSupplyTo, _tTotal);
 
@@ -171,7 +174,9 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	}
 
 	function balanceOf (address account) public view returns (uint256) {
-		if (_isExcluded[account]) return _tOwned[account];
+		if (_isExcluded[account]) {
+			return _tOwned[account];	
+		}
 		return tokenFromReflection(_rOwned[account]);
 	}
 	function transfer (
@@ -250,9 +255,9 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		if (_isExcluded[msg.sender]) {
 			revert ExcludedAccountCanNotCall();
 		}
-		(RInfo memory rr,) = _getValues(tAmount);
-		_rOwned[msg.sender] = _rOwned[msg.sender] - rr.rAmount;
-		_rTotal = _rTotal - rr.rAmount;
+		(RInfo memory rr,) = _getValues(tAmount, true);
+		_rOwned[msg.sender] -= rr.rAmount;
+		_rTotal -= rr.rAmount;
 		_tFeeTotal = _tFeeTotal - tAmount;
 	}
 
@@ -265,17 +270,12 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			return 0;
 		}
 
-		if (!deductTransferFee) {
-			(RInfo memory rr,) = _getValues(tAmount);
-			return rr.rAmount;
-		} else {
-			(RInfo memory rr,) = _getValues(tAmount);
-			return rr.rTransferAmount;
-		}
+		(RInfo memory rr,) = _getValues(tAmount, deductTransferFee);
+		return rr.rTransferAmount;
 	}
 
 	function tokenFromReflection (uint256 rAmount) public view returns (uint256) {
-		if (rAmount < _rTotal) {
+		if (rAmount > _rTotal) {
 			revert AmountIsGreaterThanTotalReflections();
 		}
 		uint256 currentRate = _getRate();
@@ -395,9 +395,10 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	}
 
 	function _getValues (
-		uint256 tAmount
+		uint256 tAmount,
+		bool takeFee
 	) private view returns (RInfo memory rr, TInfo memory tt) {
-		tt = _getTValues(tAmount);
+		tt = _getTValues(tAmount, takeFee);
 		rr = _getRValues(
 			tAmount,
 			tt,
@@ -407,22 +408,23 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	}
 
 	function _getTValues(
-		uint256 tAmount
+		uint256 tAmount,
+		bool takeFee
 	) private view returns (TInfo memory tt) {
-		tt.tBurnFee = 
-			_fees.burnFeePercent() * tAmount / PRECISION;
-		tt.tDistributionFee = 
-			_fees.distributionFeePercent() * tAmount / PRECISION;
-		tt.tTreasuryFee = 
-			_fees.treasuryFeePercent() * tAmount / PRECISION;
-		tt.tDevFundFee = 
-			_fees.devFeePercent() * tAmount / PRECISION;
-		tt.tFirstBuyPrizeFee = 
-			_fees.firstBuyLotteryPrizeFeePercent() * tAmount / PRECISION;
-		tt.tHolderPrizeFee = 
-			_fees.holdersLotteryPrizeFeePercent() * tAmount / PRECISION;
-		tt.tDonationLotteryPrizeFee = 
-			_fees.donationLotteryPrizeFeePercent() * tAmount / PRECISION;
+		tt.tBurnFee = takeFee ?
+			_fees.burnFeePercent() * tAmount / PRECISION : 0;
+		tt.tDistributionFee = takeFee ?
+			_fees.distributionFeePercent() * tAmount / PRECISION : 0;
+		tt.tTreasuryFee = takeFee ?
+			_fees.treasuryFeePercent() * tAmount / PRECISION : 0;
+		tt.tDevFundFee = takeFee ?
+			_fees.devFeePercent() * tAmount / PRECISION : 0;
+		tt.tFirstBuyPrizeFee = takeFee ?
+			_fees.firstBuyLotteryPrizeFeePercent() * tAmount / PRECISION : 0;
+		tt.tHolderPrizeFee = takeFee ?
+			_fees.holdersLotteryPrizeFeePercent() * tAmount / PRECISION : 0;
+		tt.tDonationLotteryPrizeFee = takeFee ?
+			_fees.donationLotteryPrizeFeePercent() * tAmount / PRECISION : 0;
 
 		uint totalFee = tt.tBurnFee + tt.tLiquidityFee + tt.tDistributionFee +
 			tt.tTreasuryFee + tt.tDevFundFee + tt.tFirstBuyPrizeFee +
@@ -479,7 +481,9 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			rSupply = rSupply - _rOwned[_excluded[i]];
 			tSupply = tSupply - _tOwned[_excluded[i]];
 		}
-		if (rSupply < _rTotal / _tTotal) return (_rTotal, _tTotal);
+		if (rSupply < _rTotal / _tTotal) {
+			return (_rTotal, _tTotal);
+		}
 		return (rSupply, tSupply);
 	}
 
@@ -507,7 +511,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 
 		(, uint256 tSupply) = _getCurrentSupply();
 		uint256 lastUserBalance = balanceOf(to) + (amount * 
-			(PRECISION - _totalFeePercent()) / PRECISION);
+			(PRECISION - _fees.all()) / PRECISION);
 
 		// bot \ whales prevention
 		if (block.timestamp <= (_creationTime + 1 days)) {
@@ -548,13 +552,11 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		if (amount == 0) {
 			revert TransferAmountIsZero();
 		}
-
 		uint256 contractTokenBalance = balanceOf(address(this));
 		// whitelist to allow treasure to add liquidity:
 		if (whitelist[from] || whitelist[to]) {
 			emit WhiteListTransfer(from, to, amount);
 		} else {
-
 			if( from == PANCAKE_PAIR || from == address(PANCAKE_ROUTER) ){
 				_antiAbuse(from, to, amount);
 			}
@@ -658,7 +660,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		uint256 _amount
 	) private {
 		// Save configs and counter to memory to decrease amount of storage reads.
-		LotteryConfig memory runtime = lotteryConfig;
+		LotteryConfig memory runtime = _lotteryConfig;
 		RuntimeCounter memory runtimeCounter = _counter.counterMemPtr();
 
 		_firstBuyLottery(
@@ -747,10 +749,9 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		uint256 tAmount,
 		bool takeFee
 	) private {
-		(RInfo memory rr, TInfo memory tt) = _getValues(tAmount);
+		(RInfo memory rr, TInfo memory tt) = _getValues(tAmount, takeFee);
 		_rOwned[sender] -= rr.rAmount;
 		_rOwned[recipient] += rr.rTransferAmount;
-
 		if (takeFee) {
 			_takeLiquidity(tt.tLiquidityFee);
 			_reflectFee(rr, tt);
@@ -765,7 +766,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		uint256 tAmount,
 		bool takeFee
 	) private {
-		(RInfo memory rr, TInfo memory tt) = _getValues(tAmount);
+		(RInfo memory rr, TInfo memory tt) = _getValues(tAmount, takeFee);
 		_rOwned[sender] -= rr.rAmount;
 		_tOwned[recipient] += tt.tTransferAmount;
 		_rOwned[recipient] += rr.rTransferAmount;
@@ -784,7 +785,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		uint256 tAmount,
 		bool takeFee
 	) private {
-		(RInfo memory rr, TInfo memory tt) = _getValues(tAmount);
+		(RInfo memory rr, TInfo memory tt) = _getValues(tAmount, takeFee);
 		_tOwned[sender] -= tAmount;
 		_rOwned[sender] -= rr.rAmount;
 		_rOwned[recipient] += rr.rTransferAmount;
@@ -803,7 +804,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		uint256 tAmount,
 		bool takeFee
 	) private {
-		(RInfo memory rr, TInfo memory tt) = _getValues(tAmount);
+		(RInfo memory rr, TInfo memory tt) = _getValues(tAmount, takeFee);
 		_tOwned[sender] -= tAmount;
 		_rOwned[sender] -= rr.rAmount;
 		_tOwned[recipient] += tt.tTransferAmount;
@@ -817,7 +818,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		emit Transfer(sender, recipient, tt.tTransferAmount);
 	}
 
-	function _totalFeePercent () private view returns (uint256) {
+	function totalFeePercent () external view returns (uint256) {
 		return _fees.all();
 	}
 
@@ -840,20 +841,32 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		}
 	}
 
-	function _calculateFirstBuyLotteryPrize() private view returns (uint256) {
+	function _calculateFirstBuyLotteryPrize () private view returns (uint256) {
 		return balanceOf(firstBuyLotteryPrizePoolAddress) *
 			SEVENTY_FIVE_PERCENTS / PRECISION;
 	}
 
-	function _calculateHoldersLotteryPrize() private view returns (uint256) {
+	function _calculateHoldersLotteryPrize () private view returns (uint256) {
 		return balanceOf(holderLotteryPrizePoolAddress) *
 			SEVENTY_FIVE_PERCENTS / PRECISION;
 	}
 
 
-	function _calculateDonationLotteryPrize() private view returns (uint256) {
+	function _calculateDonationLotteryPrize () private view returns (uint256) {
 		return balanceOf(donationLotteryPrizePoolAddress) * 
 			SEVENTY_FIVE_PERCENTS / PRECISION;
+	}
+
+	function _seedTicketsArray (
+		address[100] memory _tickets,
+		uint256 _index,
+		address _player
+	) internal pure {
+		if (_tickets[_index] == _player) {
+			_seedTicketsArray(_tickets, _index + 1, _player);
+		} else {
+			_tickets[_index] = _player;
+		}
 	}
 
 	function _finishFirstBuyLottery(
@@ -863,8 +876,12 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		address player = _round.jackpotPlayer;
 		address[100] memory tickets;
 		for (uint256 i; i < uint8(_round.jackpotEntry);) {
-			uint256 idx = _random.second >> (i * 25);
-			tickets[idx] = player;
+			uint256 shift = (i * TWENTY_FIVE_BITS);
+			uint256 idx = _random.second >> shift;
+			assembly {
+				idx := mod(idx, 100)
+			}
+			_seedTicketsArray(tickets, idx, player);
 			unchecked {
 				++i;
 			}
@@ -878,19 +895,20 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		if (tickets[winnerIdx] == player) {
 			uint256 prize = _calculateFirstBuyLotteryPrize();
 			_tokenTransfer(
-			holderLotteryPrizePoolAddress,
-			player,
-			prize,
-			false
-		);
-		
-		_round.winner = player;
-		_round.prize = prize;
-		_round.lotteryType = LotteryType.FINISHED_JACKPOT;
+				firstBuyLotteryPrizePoolAddress,
+				player,
+				prize,
+				false
+			);
+
+			_round.winner = player;
+			_round.prize = prize;
 		}
+		
+		_round.lotteryType = LotteryType.FINISHED_JACKPOT;
 	}
 
-	function _finishHoldersLottery(
+	function _finishHoldersLottery (
 		LotteryRound storage _round,
 		uint256 _random
 	) private {
@@ -899,6 +917,8 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		assembly {
 			winnerIdx := mod(_random, holdersLength)
 		}
+		console.log(holdersLength);
+		console.log(winnerIdx);
 		address winner = _holders.array[winnerIdx];
 		uint256 prize = _calculateHoldersLotteryPrize();
 
@@ -914,12 +934,13 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		_round.lotteryType = LotteryType.FINISHED_HOLDERS;
 	}
 
-	function _finishDonationLottery(
+	function _finishDonationLottery (
 		LotteryRound storage _round,
 		uint256 _random
 	) private {
 		uint256 winnerIdx;
 		uint256 donatorsLength = _donators.length;
+		console.log(donatorsLength, "donatorsLength");
 		assembly {
 			winnerIdx := mod(_random, donatorsLength)
 		}
@@ -936,6 +957,8 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		_round.winner = winner;
 		_round.prize = prize;
 		_round.lotteryType = LotteryType.FINISHED_DONATION;
+
+		delete _donators;
 	}
 
 	function updateHolderList (
@@ -944,7 +967,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
         for( uint i = 0 ; i < holdersToCheck.length ; i ++ ){
             _checkForHoldersLotteryEligibility(
 				holdersToCheck[i],
-				lotteryConfig.holdersLotteryMinBalance
+				_lotteryConfig.holdersLotteryMinBalance
 			);
         }
     }

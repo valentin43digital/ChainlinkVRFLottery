@@ -5,10 +5,15 @@ import {
     IERC20
 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {
-    IConfiguration
-} from "./IConfiguration.sol";
+interface ILotteryToken is IERC20 {
 
-interface ILotteryToken is IConfiguration, IERC20 {
-    
+    function excludeFromReward (address account) external;
+
+	function includeInReward (address account) external;
+
+	function setWhitelist (address account, bool _status) external;
+
+	function setMaxTxPercent (uint256 maxTxPercent) external;
+
+	function setSwapAndLiquifyEnabled(bool _enabled) external;
 }
