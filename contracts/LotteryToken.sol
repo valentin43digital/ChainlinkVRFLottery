@@ -33,8 +33,6 @@ import {
 	toRandomWords
 } from "./lib/ConstantsAndTypes.sol";
 
-import "hardhat/console.sol";
-
 contract LotteryToken is LotteryEngine, ILotteryToken {
 
 	error TransferAmountExceededForToday ();

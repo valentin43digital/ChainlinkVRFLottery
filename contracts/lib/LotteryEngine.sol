@@ -28,7 +28,7 @@ import {
 import {
 	VRFConsumerBaseV2
 } from "./chainlink/VRFConsumerBaseV2.sol";
-import "hardhat/console.sol";
+
 /**
 
 */
@@ -56,7 +56,6 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 	) {}
 
 	function _requestRandomWords(uint32 _wordsAmount) internal returns (uint256) {
-		console.log("TRIGGERED", _wordsAmount);
 		return	VRFCoordinatorV2Interface(VRF_COORDINATOR).requestRandomWords(
 			_consumerConfig.gasPriceKey,
 			_consumerConfig.subscriptionId,
@@ -111,7 +110,6 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 		}
 
 		uint256 requestId = _requestRandomWords(1);
-		console.logBytes32(bytes32(requestId));
 		rounds[requestId].lotteryType = LotteryType.HOLDERS;
 		_runtimeCounter.resetHoldersLotteryCounter();
 		_counter = _runtimeCounter.store();
@@ -153,7 +151,6 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 				return;
 			}
 			uint256 requestId = _requestRandomWords(1);
-			console.logBytes32(bytes32(requestId));
 			rounds[requestId].lotteryType = LotteryType.DONATION;
 
 			_runtimeCounter.resetDonationLotteryCounter();
