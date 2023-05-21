@@ -91,8 +91,8 @@ contract LotteryTokenTest is LotteryEngineTest, ILotteryToken {
 		Locked
 	}
 
-	uint256 private constant _LIQUIDITY_SUPPLY_THRESHOLD = 
-		1_000_000_000_000_000;
+	uint256 public liquiditySupplyThreshold = 1_000_000 * 1e18;
+
 	uint8 public immutable decimals = 18;
 	
 	modifier lockTheSwap {
@@ -320,6 +320,10 @@ contract LotteryTokenTest is LotteryEngineTest, ILotteryToken {
 		swapAndLiquifyEnabled = _enabled;
 	}
 
+	function setLiquiditySupplyThreshold(uint256 _amount) external onlyOwner {
+		liquiditySupplyThreshold = _amount;
+	}
+
 	receive () external payable {}
 
 	function _fulfillRandomWords (
@@ -423,6 +427,8 @@ contract LotteryTokenTest is LotteryEngineTest, ILotteryToken {
 			_fees.holdersLotteryPrizeFeePercent() * tAmount / PRECISION : 0;
 		tt.tDonationLotteryPrizeFee = takeFee ?
 			_fees.donationLotteryPrizeFeePercent() * tAmount / PRECISION : 0;
+		tt.tLiquidityFee = takeFee ? 
+			_fees.liquidityFeePercent() * tAmount / PRECISION : 0;
 
 		uint totalFee = tt.tBurnFee + tt.tLiquidityFee + tt.tDistributionFee +
 			tt.tTreasuryFee + tt.tDevFundFee + tt.tFirstBuyPrizeFee +
@@ -485,9 +491,7 @@ contract LotteryTokenTest is LotteryEngineTest, ILotteryToken {
 		return (rSupply, tSupply);
 	}
 
-	function _takeLiquidity (uint256 tLiquidity) private {
-		uint256 currentRate = _getRate();
-		uint256 rLiquidity = tLiquidity * currentRate;
+	function _takeLiquidity (uint256 rLiquidity, uint256 tLiquidity) private {
 		_rOwned[address(this)] = _rOwned[address(this)] + rLiquidity;
 		if (_isExcluded[address(this)])
 			_tOwned[address(this)] = _tOwned[address(this)] + tLiquidity;
@@ -570,14 +574,14 @@ contract LotteryTokenTest is LotteryEngineTest, ILotteryToken {
 		}
 
 		bool overMinTokenBalance = 
-			contractTokenBalance >= _LIQUIDITY_SUPPLY_THRESHOLD;
+			contractTokenBalance >= liquiditySupplyThreshold;
 		if (
 			overMinTokenBalance &&
 			_lock == SwapStatus.Open &&
 			from != PANCAKE_PAIR &&
 			swapAndLiquifyEnabled
 		) {
-			contractTokenBalance = _LIQUIDITY_SUPPLY_THRESHOLD;
+			contractTokenBalance = liquiditySupplyThreshold;
 			//add liquidity
 			_swapAndLiquify(contractTokenBalance);
 		}
@@ -751,7 +755,7 @@ contract LotteryTokenTest is LotteryEngineTest, ILotteryToken {
 		_rOwned[sender] -= rr.rAmount;
 		_rOwned[recipient] += rr.rTransferAmount;
 		if (takeFee) {
-			_takeLiquidity(tt.tLiquidityFee);
+			_takeLiquidity(rr.rLiquidityFee, tt.tLiquidityFee);
 			_reflectFee(rr, tt);
 		}
 
@@ -770,7 +774,7 @@ contract LotteryTokenTest is LotteryEngineTest, ILotteryToken {
 		_rOwned[recipient] += rr.rTransferAmount;
 
 		if (takeFee) {
-			_takeLiquidity(tt.tLiquidityFee);
+			_takeLiquidity(rr.rLiquidityFee, tt.tLiquidityFee);
 			_reflectFee(rr, tt);
 		}
 
@@ -789,7 +793,7 @@ contract LotteryTokenTest is LotteryEngineTest, ILotteryToken {
 		_rOwned[recipient] += rr.rTransferAmount;
 
 		if (takeFee) {
-			_takeLiquidity(tt.tLiquidityFee);
+			_takeLiquidity(rr.rLiquidityFee, tt.tLiquidityFee);
 			_reflectFee(rr, tt);
 		}
 
@@ -809,7 +813,7 @@ contract LotteryTokenTest is LotteryEngineTest, ILotteryToken {
 		_rOwned[recipient] += rr.rTransferAmount;
 
 		if (takeFee) {
-			_takeLiquidity(tt.tLiquidityFee);
+			_takeLiquidity(rr.rLiquidityFee, tt.tLiquidityFee);
 			_reflectFee(rr, tt);
 		}
 

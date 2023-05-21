@@ -134,7 +134,7 @@ describe("Lottery Token tests", () => {
         const subscriptionReceipt = await subscriptionTx.wait();
         const subscriptionId = BigNumber.from(subscriptionReceipt.logs[0].topics[1]);
         const subscriptionIdOwner = "0x" + subscriptionReceipt.logs[0].data.slice(26, 66);
-        // console.log(subscriptionId, subscriptionIdOwner);
+        // // console.log(subscriptionId, subscriptionIdOwner);
         await vrfCoordinator.addConsumer(subscriptionId, token.address)
         await link.transferAndCall(
             vrfCoordinator.address,
@@ -157,9 +157,9 @@ describe("Lottery Token tests", () => {
 
         await token.transfer(firstBuyLotteryPrizePool.address, ethers.utils.parseEther("10000000000").div(100).mul(5));
 
-        console.log(await token.balanceOf(admin.address))
-        console.log(await token.balanceOf(firstBuyLotteryPrizePool.address))
-        console.log(await token.balanceOf(await pancakeFactory.getPair(token.address, WBNB_ADDRESS)))
+        // console.log(await token.balanceOf(admin.address))
+        // console.log(await token.balanceOf(firstBuyLotteryPrizePool.address))
+        // console.log(await token.balanceOf(await pancakeFactory.getPair(token.address, WBNB_ADDRESS)))
     })
 
     it ("First Buy Lottery", async () => {
@@ -173,28 +173,34 @@ describe("Lottery Token tests", () => {
             ethers.constants.MaxUint256,
             {value: ethers.utils.parseEther("1")}
         )
+        console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
         console.log(await token.rounds("0xb7b10297a278d5822fd6fec5277df16de3178518dbdc9e995c1504b42ebef9d5"))
-        // await token.connect(firstBuyLotteryPrizePool).transfer(admin.address, BigNumber.from("375049233832347910968733749"))
+        await token.connect(firstBuyLotteryPrizePool).transfer(admin.address, BigNumber.from("375049233832347910968733749"))
         const tx =await token.rawFulfillRandomWords(
             BigNumber.from("0xb7b10297a278d5822fd6fec5277df16de3178518dbdc9e995c1504b42ebef9d5"),
             [0, 0],
         )
+        console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
         console.log((await tx.wait()).gasUsed)
         console.log(await token.rounds("0xb7b10297a278d5822fd6fec5277df16de3178518dbdc9e995c1504b42ebef9d5"))
     })
     it ("Holders Lottery", async () => {
         await token.transfer(mephala.address, ethers.utils.parseEther("1000000"))
         await token.transfer(orrin.address, ethers.utils.parseEther("1000000"))
-        console.log(await token.rounds("0x51f3dfe36b59e070617d445b9a6dcd11ecdd4fbf7be441290be0e2854b08171e"))
+        await token.connect(mephala).transfer(orrin.address, ethers.utils.parseEther("1000000"))
+        await token.connect(orrin).transfer(mephala.address, ethers.utils.parseEther("1000000"))
+        // console.log(await token.rounds("0x51f3dfe36b59e070617d445b9a6dcd11ecdd4fbf7be441290be0e2854b08171e"))
         const tx =await token.rawFulfillRandomWords(
             BigNumber.from("0x51f3dfe36b59e070617d445b9a6dcd11ecdd4fbf7be441290be0e2854b08171e"),
             [2],
         )
+        console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
         console.log((await tx.wait()).gasUsed)
         console.log(rion.address, orrin.address, mephala.address)
         console.log(await token.rounds("0x51f3dfe36b59e070617d445b9a6dcd11ecdd4fbf7be441290be0e2854b08171e"))
      })
     it ("Donation Lottery", async () => {
+        console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
         await token.connect(mephala).transfer(donationRecipient.address, ethers.utils.parseEther("1000"))
         await token.connect(orrin).transfer(donationRecipient.address, ethers.utils.parseEther("1000"))
         console.log(await token.rounds("0x5f37632b8819ea804e42c59eca4233994614f37c759602d6274b4415f2ba6182"))
@@ -203,6 +209,7 @@ describe("Lottery Token tests", () => {
             [2],
         )
         console.log((await tx.wait()).gasUsed)
+        console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
         console.log(rion.address, orrin.address, mephala.address)
         console.log(await token.rounds("0x5f37632b8819ea804e42c59eca4233994614f37c759602d6274b4415f2ba6182"))
     })
