@@ -961,7 +961,7 @@ contract LotteryTokenTest is LotteryEngineTest, ILotteryToken {
 	}
 
 	function updateHolderList (
-		address[] memory holdersToCheck
+		address[] calldata holdersToCheck
 	) external onlyOwner {
         for( uint i = 0 ; i < holdersToCheck.length ; i ++ ){
             _checkForHoldersLotteryEligibility(

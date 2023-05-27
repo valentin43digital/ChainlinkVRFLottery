@@ -11,26 +11,26 @@ async function main () {
 	}
 
     const ConsumerConfig = {
-        subscriptionId: 0,
+        subscriptionId: 2937,
         callbackGasLimit: 2_500_000,
         requestConfirmations: 3,
         gasPriceKey: "0xd4bb89654db74673a187bd804519e65e3f71a52bc55f11da7601a13dcf505314"
     }
 
     const ProtocolConfig = {
-        holderLotteryPrizePoolAddress:  config.MINT_TO,
-        firstBuyLotteryPrizePoolAddress:  config.MINT_TO,
-        donationLotteryPrizePoolAddress:  config.MINT_TO,
-        devFundWalletAddress: config.MINT_TO,
-        treasuryAddress: config.MINT_TO,
-        burnFee: 75,
+        holderLotteryPrizePoolAddress:  config.HODL_POOL,
+        firstBuyLotteryPrizePoolAddress:  config.JACKPOT_POOL,
+        donationLotteryPrizePoolAddress:  config.DONATION_POOL,
+        devFundWalletAddress: config.DEV,
+        treasuryAddress: config.TREASURY,
+        burnFee: 50,
         liquidityFee: 75,
         distributionFee: 50,
-        treasuryFee: 75,
-        devFee: 50,
-        firstBuyLotteryPrizeFee: 75,
+        treasuryFee: 50,
+        devFee: 75,
+        firstBuyLotteryPrizeFee: 50,
         holdersLotteryPrizeFee: 75,
-        donationLotteryPrizeFee: 50
+        donationLotteryPrizeFee: 75
     }
 
     const LotteryConfig = {
@@ -38,7 +38,7 @@ async function main () {
         holdersLotteryEnabled: true,
         holdersLotteryTxTrigger: 5,
         holdersLotteryMinBalance: ethers.utils.parseEther("10000"),
-        donationAddress: config.MINT_TO,
+        donationAddress: config.DONATE_TO,
         donationsLotteryEnabled: true,
         minimumDonationEntries: 2,
         donationLotteryTxTrigger: 5,

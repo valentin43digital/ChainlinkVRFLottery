@@ -27,7 +27,7 @@ import {
 abstract contract Configuration is IConfiguration, VRFConsumerConfig,
 	ProtocolConfig, LotteryEngineConfig, Ownable {
 
-	uint256 internal _creationTime;
+	uint256 internal immutable _creationTime;
 
 	constructor (
 		ConsumerConfig memory _consumerConfig,
