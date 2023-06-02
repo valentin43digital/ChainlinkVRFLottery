@@ -26,6 +26,7 @@ import {
 	DAY_THREE_LIMIT,
 	MAX_UINT256,
 	DEAD_ADDRESS,
+	TWENTY_FIVE_PERCENTS,
 	SEVENTY_FIVE_PERCENTS,
 	PRECISION,
 	LotteryType,
@@ -46,7 +47,8 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	error AccountAlreadyIncluded ();
 	error CannotApproveToZeroAddress ();
 	error ApproveAmountIsZero ();
-	error AmountIsGreaterThanTotalReflections();
+	error AmountIsGreaterThanTotalReflections ();
+	error TransferAmountExceedsAllowedAmount ();
 
 	event WhiteListTransfer(
 		address from,
@@ -160,11 +162,11 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	}
 
 	function name () public pure returns (string memory) {
-		return "Lottery Token";
+		return "Smash Time";
 	}
 
 	function symbol () public pure returns (string memory) {
-		return "LT";
+		return "SMH";
 	}
 
 	function totalSupply () public view returns (uint256) {
@@ -280,50 +282,6 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		return rAmount / currentRate;
 	}
 
-	function excludeFromReward (address account) public onlyOwner() {
-		if (_isExcluded[account]) {
-			revert AccountAlreadyExcluded();
-		}
-
-		if (_rOwned[account] > 0) {
-			_tOwned[account] = tokenFromReflection(_rOwned[account]);
-		}
-		_isExcluded[account] = true;
-		_excluded.push(account);
-	}
-
-	function includeInReward (address account) external onlyOwner() {
-		if (!_isExcluded[account]) {
-			revert AccountAlreadyIncluded();
-		}
-		for (uint256 i = 0; i < _excluded.length; i++) {
-			if (_excluded[i] == account) {
-				_excluded[i] = _excluded[_excluded.length - 1];
-				_tOwned[account] = 0;
-				_isExcluded[account] = false;
-				_excluded.pop();
-				break;
-			}
-		}
-	}
-
-	// whitelist to add liquidity
-	function setWhitelist (address account, bool _status) external onlyOwner {
-		whitelist[account] = _status;
-	}
-
-	function setMaxTxPercent (uint256 maxTxPercent) external onlyOwner() {
-		maxTxAmount = _tTotal * maxTxPercent / PRECISION;
-	}
-
-	function setSwapAndLiquifyEnabled(bool _enabled) external onlyOwner {
-		swapAndLiquifyEnabled = _enabled;
-	}
-
-	function setLiquiditySupplyThreshold(uint256 _amount) external onlyOwner {
-		liquiditySupplyThreshold = _amount;
-	}
-
 	receive () external payable {}
 
 	function _fulfillRandomWords (
@@ -400,7 +358,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		uint256 tAmount,
 		bool takeFee
 	) private view returns (RInfo memory rr, TInfo memory tt) {
-		tt = _getTValues(tAmount, takeFee);
+		tt = _getTValues(tAmount, _lotteryConfig.firstBuyLotteryEnabled, takeFee);
 		rr = _getRValues(
 			tAmount,
 			tt,
@@ -411,24 +369,25 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 
 	function _getTValues(
 		uint256 tAmount,
+		bool jackpotOn,
 		bool takeFee
 	) private view returns (TInfo memory tt) {
 		tt.tBurnFee = takeFee ?
-			_fees.burnFeePercent() * tAmount / PRECISION : 0;
+			_fees.burnFeePercent(jackpotOn) * tAmount / PRECISION : 0;
 		tt.tDistributionFee = takeFee ?
-			_fees.distributionFeePercent() * tAmount / PRECISION : 0;
+			_fees.distributionFeePercent(jackpotOn) * tAmount / PRECISION : 0;
 		tt.tTreasuryFee = takeFee ?
-			_fees.treasuryFeePercent() * tAmount / PRECISION : 0;
+			_fees.treasuryFeePercent(jackpotOn) * tAmount / PRECISION : 0;
 		tt.tDevFundFee = takeFee ?
-			_fees.devFeePercent() * tAmount / PRECISION : 0;
+			_fees.devFeePercent(jackpotOn) * tAmount / PRECISION : 0;
 		tt.tFirstBuyPrizeFee = takeFee ?
-			_fees.firstBuyLotteryPrizeFeePercent() * tAmount / PRECISION : 0;
+			_fees.firstBuyLotteryPrizeFeePercent(jackpotOn) * tAmount / PRECISION : 0;
 		tt.tHolderPrizeFee = takeFee ?
-			_fees.holdersLotteryPrizeFeePercent() * tAmount / PRECISION : 0;
+			_fees.holdersLotteryPrizeFeePercent(jackpotOn) * tAmount / PRECISION : 0;
 		tt.tDonationLotteryPrizeFee = takeFee ?
-			_fees.donationLotteryPrizeFeePercent() * tAmount / PRECISION : 0;
+			_fees.donationLotteryPrizeFeePercent(jackpotOn) * tAmount / PRECISION : 0;
 		tt.tLiquidityFee = takeFee ? 
-			_fees.liquidityFeePercent() * tAmount / PRECISION : 0;
+			_fees.liquidityFeePercent(jackpotOn) * tAmount / PRECISION : 0;
 
 		uint totalFee = tt.tBurnFee + tt.tLiquidityFee + tt.tDistributionFee +
 			tt.tTreasuryFee + tt.tDevFundFee + tt.tFirstBuyPrizeFee +
@@ -513,7 +472,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 
 		(, uint256 tSupply) = _getCurrentSupply();
 		uint256 lastUserBalance = balanceOf(to) + (amount * 
-			(PRECISION - _fees.all()) / PRECISION);
+			(PRECISION - _fees.all(_lotteryConfig.firstBuyLotteryEnabled)) / PRECISION);
 
 		// bot \ whales prevention
 		if (block.timestamp <= (_creationTime + 1 days)) {
@@ -522,21 +481,26 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			if (lastUserBalance >= allowedAmount) {
 				revert TransferAmountExceededForToday();
 			}
-
-		} else if (block.timestamp <= (_creationTime + 2 days)) {
+		}
+		
+		if (block.timestamp <= (_creationTime + 2 days)) {
 			allowedAmount = tSupply * DAY_TWO_LIMIT / PRECISION;
 
 			 if (lastUserBalance >= allowedAmount) {
 				revert TransferAmountExceededForToday();
 			}
-
-		} else if (block.timestamp <= (_creationTime + 3 days)) {
+		} 
+		
+		if (block.timestamp <= (_creationTime + 3 days)) {
 			allowedAmount = tSupply * DAY_THREE_LIMIT / PRECISION;
 
 			 if (lastUserBalance >= allowedAmount) {
 				revert TransferAmountExceededForToday();
 			}
-			
+		}
+
+		if (amount > maxTxAmount) {
+			revert TransferAmountExceedsAllowedAmount();
 		}
 	}
 		
@@ -594,11 +558,11 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			takeFee = false;
 		}
 
-		//transfer amount, it will take tax, burn, liquidity fee
-		_tokenTransfer(from, to, amount, takeFee);
-
 		// process lottery if user is paying fee
 		_lotteryOnTransfer(from, to, amount);
+
+		//transfer amount, it will take tax, burn, liquidity fee
+		_tokenTransfer(from, to, amount, takeFee);
 	}
 
 	function _checkForHoldersLotteryEligibility(
@@ -821,7 +785,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	}
 
 	function totalFeePercent () external view returns (uint256) {
-		return _fees.all();
+		return _fees.all(_lotteryConfig.firstBuyLotteryEnabled);
 	}
 
 	function _finishRound (
@@ -845,7 +809,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 
 	function _calculateFirstBuyLotteryPrize () private view returns (uint256) {
 		return balanceOf(firstBuyLotteryPrizePoolAddress) *
-			SEVENTY_FIVE_PERCENTS / PRECISION;
+			TWENTY_FIVE_PERCENTS / PRECISION;
 	}
 
 	function _calculateHoldersLotteryPrize () private view returns (uint256) {
@@ -970,4 +934,52 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			);
         }
     }
+
+	function excludeFromReward (address account) public onlyOwner() {
+		if (_isExcluded[account]) {
+			revert AccountAlreadyExcluded();
+		}
+
+		if (_rOwned[account] > 0) {
+			_tOwned[account] = tokenFromReflection(_rOwned[account]);
+		}
+		_isExcluded[account] = true;
+		_excluded.push(account);
+	}
+
+	function includeInReward (address account) external onlyOwner() {
+		if (!_isExcluded[account]) {
+			revert AccountAlreadyIncluded();
+		}
+		for (uint256 i = 0; i < _excluded.length; i++) {
+			if (_excluded[i] == account) {
+				_excluded[i] = _excluded[_excluded.length - 1];
+				_tOwned[account] = 0;
+				_isExcluded[account] = false;
+				_excluded.pop();
+				break;
+			}
+		}
+	}
+
+	// whitelist to add liquidity
+	function setWhitelist (address account, bool _status) external onlyOwner {
+		whitelist[account] = _status;
+	}
+
+	function setMaxTxPercent (uint256 maxTxPercent) external onlyOwner() {
+		maxTxAmount = _tTotal * maxTxPercent / PRECISION;
+	}
+
+	function setSwapAndLiquifyEnabled(bool _enabled) external onlyOwner {
+		swapAndLiquifyEnabled = _enabled;
+	}
+
+	function setLiquiditySupplyThreshold(uint256 _amount) external onlyOwner {
+		liquiditySupplyThreshold = _amount;
+	}
+
+	function withdraw(uint256 _amount) external onlyOwner {
+		_transferStandard(address(this), msg.sender, _amount, false);
+	}
 }

@@ -166,35 +166,51 @@ abstract contract Configuration is IConfiguration, VRFConsumerConfig,
     }
 
 	function burnFeePercent () external view returns (uint32) {
-		return _fees.burnFeePercent();
+		return _fees.burnFeePercent(
+			_lotteryConfig.firstBuyLotteryEnabled
+		);
 	}
 
 	function liquidityFeePercent () external view returns (uint32) {
-		return _fees.liquidityFeePercent ();
+		return _fees.liquidityFeePercent (
+			_lotteryConfig.firstBuyLotteryEnabled
+		);
 	}
 
 	function distributionFeePercent () external view returns (uint32) {
-		return _fees.distributionFeePercent();
+		return _fees.distributionFeePercent(
+			_lotteryConfig.firstBuyLotteryEnabled
+		);
 	}
 
 	function treasuryFeePercent () external view returns (uint32) {
-		return _fees.treasuryFeePercent();
+		return _fees.treasuryFeePercent(
+			_lotteryConfig.firstBuyLotteryEnabled
+		);
 	}
 
 	function devFeePercent () external view returns (uint32) {
-		return _fees.devFeePercent();
+		return _fees.devFeePercent(
+			_lotteryConfig.firstBuyLotteryEnabled
+		);
 	}
 
 	function firstBuyLotteryPrizeFeePercent () external view returns (uint32) {
-		return _fees.firstBuyLotteryPrizeFeePercent();
+		return _fees.firstBuyLotteryPrizeFeePercent(
+			_lotteryConfig.firstBuyLotteryEnabled
+		);
 	}
 
 	function holdersLotteryPrizeFeePercent () external view returns (uint32) {
-		return _fees.holdersLotteryPrizeFeePercent();
+		return _fees.holdersLotteryPrizeFeePercent(
+			_lotteryConfig.firstBuyLotteryEnabled
+		);
 	}
 
 	function donationLotteryPrizeFeePercent () external view returns (uint32) {
-		return _fees.donationLotteryPrizeFeePercent();
+		return _fees.donationLotteryPrizeFeePercent(
+			_lotteryConfig.firstBuyLotteryEnabled
+		);
 	}
 
 	function isExcludedFromFee (address account) external view returns (bool) {

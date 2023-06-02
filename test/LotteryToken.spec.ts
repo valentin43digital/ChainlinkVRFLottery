@@ -78,14 +78,14 @@ describe("Lottery Token tests", () => {
             donationLotteryPrizePoolAddress:  donationLotteryPrizePool.address,
             devFundWalletAddress: devFundWallet.address,
             treasuryAddress: treasury.address,
-            burnFee: 75,
+            burnFee: 50,
             liquidityFee: 75,
             distributionFee: 50,
-            treasuryFee: 75,
-            devFee: 50,
-            firstBuyLotteryPrizeFee: 75,
+            treasuryFee: 50,
+            devFee: 75,
+            firstBuyLotteryPrizeFee: 50,
             holdersLotteryPrizeFee: 75,
-            donationLotteryPrizeFee: 50
+            donationLotteryPrizeFee: 75
         }
         const LotteryConfig : LotteryConfigStruct = {
             firstBuyLotteryEnabled: true,
