@@ -91,16 +91,28 @@ abstract contract Configuration is IConfiguration, VRFConsumerConfig,
 		_setDonationLotteryPrizePoolAddress(_newAddress);
 	}
 
-	function setDevFundWalletAddress (
+	function setTeamAddress (
 		address _newAddress
 	) external onlyOwner {
-		_setDevFundWalletAddress(_newAddress);
+		_setTeamAddress(_newAddress);
+	}
+
+	function setTeamAccumulationAddress (
+		address _newAddress
+	) external onlyOwner {
+		_setTeamAccumulationAddress(_newAddress);
 	}
 
 	function setTreasuryAddress (
 		address _newAddress
 	) external onlyOwner {
 		_setTreasuryAddress(_newAddress);
+	}
+
+	function setTreasuryAccumulationAddress (
+		address _newAddress
+	) external onlyOwner {
+		_setTreasuryAccumulationAddress(_newAddress);
 	}
 
 	function setFeeConfig (

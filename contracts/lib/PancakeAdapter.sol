@@ -52,7 +52,6 @@ abstract contract PancakeAdapter is Configuration {
 	}
 
 	function _addLiquidity (uint256 tokenAmount, uint256 bnbAmount) internal {
-		
 		PANCAKE_ROUTER.addLiquidityETH{value : bnbAmount}(
 			address(this),
 			tokenAmount,
@@ -86,6 +85,30 @@ abstract contract PancakeAdapter is Configuration {
 		}
 	}
 
+	function _swapTokensForBNB (
+		uint256 _tokensAmount,
+		address _to
+	) internal returns (uint256 bnbAmount) {
+		uint256 balanceBeforeSwap = address(this).balance;
+		// generate the pancakeswap pair path of Token -> BNB
+		address[] memory path = new address[](2);
+		path[0] = address(this);
+		path[1] = _WBNB_ADDRESS;
+
+		// make the swap
+		PANCAKE_ROUTER.swapExactTokensForETHSupportingFeeOnTransferTokens(
+			_tokensAmount,
+			0, // accept any amount of ETH
+			path,
+			_to,
+			block.timestamp
+		);
+
+		unchecked{
+			bnbAmount =  address(this).balance - balanceBeforeSwap;
+		}
+	}
+
 	function _swapTokensForTUSDT (
 		uint256 _tokensAmount,
 		address _to
@@ -96,7 +119,7 @@ abstract contract PancakeAdapter is Configuration {
 		path[1] = _WBNB_ADDRESS;
 		path[2] = _TUSD_ADDRESS;
 
-		PANCAKE_ROUTER.swapExactTokensForTokens(
+		PANCAKE_ROUTER.swapExactTokensForTokensSupportingFeeOnTransferTokens(
 			_tokensAmount,
 			0, // accept any amount of USDT
 			path,

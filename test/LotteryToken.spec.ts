@@ -8,8 +8,7 @@ import {
     VRFCoordinatorV2Interface,
     IPegSwap,
     IERC20,
-    LinkToken,
-    LotteryTokenTest
+    LinkToken
 } from '../typechain-types';
 
 import {
@@ -31,7 +30,7 @@ describe("Lottery Token tests", () => {
     let pancakeRouter : IPancakeRouter02;
     let pegSwap : IPegSwap;
     let vrfCoordinator : VRFCoordinatorV2Interface;
-    let token : LotteryTokenTest;
+    let token : LotteryToken;
     let link : LinkToken,
     peg_link : IERC20;
     let admin : SignerWithAddress,
@@ -43,8 +42,10 @@ describe("Lottery Token tests", () => {
         holderLotteryPrizePool : SignerWithAddress,
         firstBuyLotteryPrizePool : SignerWithAddress,
         donationLotteryPrizePool : SignerWithAddress,
-        devFundWallet : SignerWithAddress,
-        treasury : SignerWithAddress
+        team : SignerWithAddress,
+        teamAccumlation : SignerWithAddress,
+        treasury : SignerWithAddress,
+        treasuryAccumulation : SignerWithAddress
 
     before( async () => {
         [
@@ -57,8 +58,10 @@ describe("Lottery Token tests", () => {
             holderLotteryPrizePool,
             firstBuyLotteryPrizePool,
             donationLotteryPrizePool,
-            devFundWallet,
-            treasury
+            team,
+            teamAccumlation,
+            treasury,
+            treasuryAccumulation
         ] = await ethers.getSigners();
 
         pancakeFactory = await ethers.getContractAt("IPancakeFactory", PANCAKE_FACTORY_ADDRESS);
@@ -76,8 +79,10 @@ describe("Lottery Token tests", () => {
             holderLotteryPrizePoolAddress:  holderLotteryPrizePool.address,
             firstBuyLotteryPrizePoolAddress:  firstBuyLotteryPrizePool.address,
             donationLotteryPrizePoolAddress:  donationLotteryPrizePool.address,
-            devFundWalletAddress: devFundWallet.address,
+            teamAddress: team.address,
             treasuryAddress: treasury.address,
+            teamFeesAccumulationAddress: teamAccumlation.address,
+            treasuryFeesAccumulationAddress: treasuryAccumulation.address,
             burnFee: 50,
             liquidityFee: 75,
             distributionFee: 50,
@@ -163,6 +168,8 @@ describe("Lottery Token tests", () => {
     })
 
     it ("First Buy Lottery", async () => {
+        console.log("START");
+        
         await pancakeRouter.connect(rion).swapExactETHForTokensSupportingFeeOnTransferTokens(
             ethers.utils.parseEther("1"),
             [
@@ -173,45 +180,53 @@ describe("Lottery Token tests", () => {
             ethers.constants.MaxUint256,
             {value: ethers.utils.parseEther("1")}
         )
-        console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
-        console.log(await token.rounds("0xb7b10297a278d5822fd6fec5277df16de3178518dbdc9e995c1504b42ebef9d5"))
+        console.log(await token.holders())
+        // console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
+        // console.log(await token.rounds("0xb7b10297a278d5822fd6fec5277df16de3178518dbdc9e995c1504b42ebef9d5"))
         await token.connect(firstBuyLotteryPrizePool).transfer(admin.address, BigNumber.from("375049233832347910968733749"))
+        console.log(await token.holders())
         const tx =await token.rawFulfillRandomWords(
             BigNumber.from("0xb7b10297a278d5822fd6fec5277df16de3178518dbdc9e995c1504b42ebef9d5"),
             [0, 0],
         )
-        console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
-        console.log((await tx.wait()).gasUsed)
-        console.log(await token.rounds("0xb7b10297a278d5822fd6fec5277df16de3178518dbdc9e995c1504b42ebef9d5"))
+        // console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
+        // console.log((await tx.wait()).gasUsed)
+        // console.log(await token.rounds("0xb7b10297a278d5822fd6fec5277df16de3178518dbdc9e995c1504b42ebef9d5"))
     })
     it ("Holders Lottery", async () => {
         await token.transfer(mephala.address, ethers.utils.parseEther("1000000"))
+        console.log(await token.holders())
         await token.transfer(orrin.address, ethers.utils.parseEther("1000000"))
+        console.log(await token.holders())
         await token.connect(mephala).transfer(orrin.address, ethers.utils.parseEther("1000000"))
+        console.log(await token.holders())
         await token.connect(orrin).transfer(mephala.address, ethers.utils.parseEther("1000000"))
+        console.log(await token.holders())
         // console.log(await token.rounds("0x51f3dfe36b59e070617d445b9a6dcd11ecdd4fbf7be441290be0e2854b08171e"))
         const tx =await token.rawFulfillRandomWords(
             BigNumber.from("0x51f3dfe36b59e070617d445b9a6dcd11ecdd4fbf7be441290be0e2854b08171e"),
             [2],
         )
-        console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
-        console.log((await tx.wait()).gasUsed)
-        console.log(rion.address, orrin.address, mephala.address)
-        console.log(await token.rounds("0x51f3dfe36b59e070617d445b9a6dcd11ecdd4fbf7be441290be0e2854b08171e"))
+        // console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
+        // console.log((await tx.wait()).gasUsed)
+        // console.log(rion.address, orrin.address, mephala.address)
+        // console.log(await token.rounds("0x51f3dfe36b59e070617d445b9a6dcd11ecdd4fbf7be441290be0e2854b08171e"))
      })
     it ("Donation Lottery", async () => {
-        console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
+        // console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
         await token.connect(mephala).transfer(donationRecipient.address, ethers.utils.parseEther("1000"))
+        console.log(await token.holders())
         await token.connect(orrin).transfer(donationRecipient.address, ethers.utils.parseEther("1000"))
-        console.log(await token.rounds("0x5f37632b8819ea804e42c59eca4233994614f37c759602d6274b4415f2ba6182"))
+        console.log(await token.holders())
+        // console.log(await token.rounds("0x5f37632b8819ea804e42c59eca4233994614f37c759602d6274b4415f2ba6182"))
         const tx =await token.rawFulfillRandomWords(
             BigNumber.from("0x5f37632b8819ea804e42c59eca4233994614f37c759602d6274b4415f2ba6182"),
             [2],
         )
-        console.log((await tx.wait()).gasUsed)
-        console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
-        console.log(rion.address, orrin.address, mephala.address)
-        console.log(await token.rounds("0x5f37632b8819ea804e42c59eca4233994614f37c759602d6274b4415f2ba6182"))
+        // console.log((await tx.wait()).gasUsed)
+        // console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
+        // console.log(rion.address, orrin.address, mephala.address)
+        // console.log(await token.rounds("0x5f37632b8819ea804e42c59eca4233994614f37c759602d6274b4415f2ba6182"))
     })
     
 })

@@ -109,6 +109,10 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 			return;
 		}
 
+		if (_holders.array.length == 0) {
+			return;
+		}
+
 		uint256 requestId = _requestRandomWords(1);
 		rounds[requestId].lotteryType = LotteryType.HOLDERS;
 		_runtimeCounter.resetHoldersLotteryCounter();

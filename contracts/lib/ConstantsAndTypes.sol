@@ -207,13 +207,13 @@ library TypesHelpers {
 			return;
 		}
 
-		uint256 arrayIdx = _holders.idx[_holder] - 1;
+		uint256 arrayIdx = holderIdx - 1;
 		uint256 lastIdx = _holders.array.length - 1;
 
 		if (arrayIdx != lastIdx) {
 			address lastElement = _holders.array[lastIdx];
 			_holders.array[arrayIdx] = lastElement;
-			_holders.idx[lastElement] = arrayIdx;
+			_holders.idx[lastElement] = holderIdx;
 		}
 
 		_holders.array.pop();
@@ -268,8 +268,10 @@ struct DistributionConfig {
 	address holderLotteryPrizePoolAddress;
 	address firstBuyLotteryPrizePoolAddress;
 	address donationLotteryPrizePoolAddress;
-	address devFundWalletAddress;
+	address teamAddress;
 	address treasuryAddress;
+	address teamFeesAccumulationAddress;
+	address treasuryFeesAccumulationAddress;
 	uint32 burnFee;
 	uint32 liquidityFee;
 	uint32 distributionFee;

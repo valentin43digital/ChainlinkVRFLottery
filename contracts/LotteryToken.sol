@@ -48,7 +48,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	error CannotApproveToZeroAddress ();
 	error ApproveAmountIsZero ();
 	error AmountIsGreaterThanTotalReflections ();
-	error TransferAmountExceedsAllowedAmount ();
+	error TransferAmountExceedsPurchaseAmount ();
 
 	event WhiteListTransfer(
 		address from,
@@ -95,6 +95,8 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 
 	uint256 public liquiditySupplyThreshold = 1_000_000 * 1e18;
 
+	uint256 public feeSupplyThreshold = 10_000_000 * 1e18;
+
 	uint8 public immutable decimals = 18;
 	
 	modifier lockTheSwap {
@@ -116,6 +118,9 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	uint256 private _tTotal = 10_000_000_000 * 1e18;
 
 	uint256 public maxTxAmount = 
+		10_000_000_000 * 1e18;
+
+	uint256 public maxBuyAmount =
 		10_000_000_000 * 1e18;
 
 	uint256 private _rTotal = (MAX_UINT256 - (MAX_UINT256 % _tTotal));
@@ -147,6 +152,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		// we whitelist treasure and owner to allow pool management
 		whitelist[_mintSupplyTo] = true;
 		whitelist[owner()] = true;
+		whitelist[address(this)] = true;
 
 
 		//exclude owner and this contract from fee
@@ -156,8 +162,10 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		_isExcludedFromFee[_dConfig.holderLotteryPrizePoolAddress] = true;
 		_isExcludedFromFee[_dConfig.firstBuyLotteryPrizePoolAddress] = true;
 		_isExcludedFromFee[_dConfig.donationLotteryPrizePoolAddress] = true;
-		_isExcludedFromFee[_dConfig.devFundWalletAddress] = true;
+		_isExcludedFromFee[_dConfig.teamAddress] = true;
+		_isExcludedFromFee[_dConfig.teamFeesAccumulationAddress] = true;
 		_isExcludedFromFee[_dConfig.treasuryAddress] = true;
+		_isExcludedFromFee[_dConfig.treasuryFeesAccumulationAddress] = true;
 		_isExcludedFromFee[DEAD_ADDRESS] = true;
 	}
 
@@ -304,9 +312,9 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			rr.rHolderPrizeFee;
 		_rOwned[donationLotteryPrizePoolAddress] +=
 			rr.rDonationLotteryPrizeFee;
-		_rOwned[devFundWalletAddress] +=
+		_rOwned[teamFeesAccumulationAddress] +=
 			rr.rDevFundFee;
-		_rOwned[treasuryAddress] += 
+		_rOwned[treasuryFeesAccumulationAddress] += 
 			rr.rTreasuryFee;
 		_rOwned[DEAD_ADDRESS] +=
 			rr.rBurnFee;
@@ -328,14 +336,14 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		if( tt.tDevFundFee > 0 )
 			emit Transfer(
 				msg.sender,
-				devFundWalletAddress,
+				teamFeesAccumulationAddress,
 				tt.tDevFundFee
 			);
 
 		if( tt.tTreasuryFee > 0 )
 			emit Transfer(
 				msg.sender,
-				treasuryAddress,
+				treasuryFeesAccumulationAddress,
 				tt.tTreasuryFee
 			);
 
@@ -499,8 +507,8 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			}
 		}
 
-		if (amount > maxTxAmount) {
-			revert TransferAmountExceedsAllowedAmount();
+		if (amount > maxBuyAmount) {
+			revert TransferAmountExceedsPurchaseAmount();
 		}
 	}
 		
@@ -551,18 +559,66 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		}
 
 		//indicates if fee should be deducted from transfer
-		bool takeFee = true;
-
-		//if any account belongs to _isExcludedFromFee account then remove the fee
-		if (_isExcludedFromFee[from] || _isExcludedFromFee[to]) {
-			takeFee = false;
-		}
+		bool takeFee = _isExcludedFromFee[from] || _isExcludedFromFee[to] ? 
+			false : true;
 
 		// process transfer and lotteries
 		_lotteryOnTransfer(from, to, amount, takeFee);
+
+		_distributeFees();
 	}
 
-	function _checkForHoldersLotteryEligibility(
+	function _distributeFees () private {
+		uint256 teamBalance = balanceOf(teamFeesAccumulationAddress);
+		if (teamBalance >= feeSupplyThreshold) {
+			uint256 balanceBefore = balanceOf(address(this));
+			uint256 half = teamBalance / 2;
+			uint256 otherHalf = balanceBefore - half;
+			_tokenTransfer(
+				teamFeesAccumulationAddress,
+				address(this),
+				teamBalance,
+				false
+			);
+			uint256 forth = half / 2;
+			uint256 otherForth = half - forth;
+			_swapTokensForTUSDT(forth, teamAddress);
+			_swapTokensForBNB(otherForth, teamAddress);
+			uint256 balanceAfter = balanceOf(address(this));
+			_tokenTransfer(
+				address(this),
+				teamAddress,
+				balanceAfter - balanceBefore + otherHalf,
+				false
+			);
+		}
+		
+		uint256 treasuryBalance = balanceOf(treasuryFeesAccumulationAddress);
+		if (treasuryBalance >= feeSupplyThreshold) {
+			uint256 balanceBefore = balanceOf(address(this));
+			uint256 half = teamBalance / 2;
+			uint256 otherHalf = balanceBefore - half;
+			_tokenTransfer( 
+				treasuryFeesAccumulationAddress,
+				address(this),
+				treasuryBalance,
+				false
+			);  
+			uint256 forth = half / 2;
+			uint256 otherForth = half - forth;
+			_swapTokensForTUSDT(forth, treasuryAddress);
+			_swapTokensForBNB(otherForth, treasuryAddress);
+			uint256 balanceAfter = balanceOf(address(this));
+			_tokenTransfer(
+				address(this),
+				treasuryAddress,
+				balanceAfter - balanceBefore + otherHalf,
+				false
+			);
+		}
+	}
+
+	function _checkForHoldersLotteryEligibility (
 		address _participant,
 		uint256 _balanceThreshold
 	) private {
@@ -580,18 +636,14 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 
 		uint256 balance = balanceOf(_participant);
 
-		if (_holders.exists(_participant)) {
-			if (balance < _balanceThreshold) {
-				_holders.remove(_participant);
-			}
+		if (balance < _balanceThreshold) {
+			_holders.remove(_participant);
 		} else {
-			if (balance >= _balanceThreshold) {
-				_holders.add(_participant);
-			}
+			_holders.add(_participant);
 		}
 	}
 
-	function _holdersLottery(
+	function _holdersLottery (
 		address _transferrer,
 		address _recipient,
 		HoldersLotteryConfig memory _runtime,
@@ -836,7 +888,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		}
 	}
 
-	function _finishFirstBuyLottery(
+	function _finishFirstBuyLottery (
 		LotteryRound storage _round,
 		RandomWords memory _random
 	) private {
@@ -881,6 +933,11 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	) private {
 		uint256 winnerIdx;
 		uint256 holdersLength = _holders.array.length;
+
+		if (holdersLength == 0) {
+			return;
+		}
+
 		assembly {
 			winnerIdx := mod(_random, holdersLength)
 		}
@@ -923,6 +980,10 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		_round.lotteryType = LotteryType.FINISHED_DONATION;
 
 		delete _donators;
+	}
+
+	function donate (uint256 _amount) external {
+		_transfer(msg.sender, _lotteryConfig.donationAddress, _amount);
 	}
 
 	function updateHolderList (
@@ -972,15 +1033,27 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		maxTxAmount = _tTotal * maxTxPercent / PRECISION;
 	}
 
-	function setSwapAndLiquifyEnabled(bool _enabled) external onlyOwner {
+	function setMaxBuyPercent (uint256 maxBuyPercent) external onlyOwner() {
+		maxBuyAmount = _tTotal * maxBuyPercent / PRECISION;
+	}
+
+	function setSwapAndLiquifyEnabled (bool _enabled) external onlyOwner {
 		swapAndLiquifyEnabled = _enabled;
 	}
 
-	function setLiquiditySupplyThreshold(uint256 _amount) external onlyOwner {
+	function setLiquiditySupplyThreshold (uint256 _amount) external onlyOwner {
 		liquiditySupplyThreshold = _amount;
 	}
 
-	function withdraw(uint256 _amount) external onlyOwner {
+	function setFeeSupplyThreshold (uint256 _amount) external onlyOwner {
+		feeSupplyThreshold = _amount;
+	}
+
+	function withdraw (uint256 _amount) external onlyOwner {
 		_transferStandard(address(this), msg.sender, _amount, false);
+	}
+
+	function holders () external view returns (address[] memory) {
+		return _holders.array;
 	}
 }

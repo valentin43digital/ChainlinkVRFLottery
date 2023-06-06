@@ -24,9 +24,13 @@ interface IConfiguration {
 
 	function setDonationLotteryPrizePoolAddress (address _newAddress) external;
 
-	function setDevFundWalletAddress (address _newAddress) external;
+	function setTeamAddress (address _newAddress) external;
+
+	function setTeamAccumulationAddress (address _newAddress) external;
 
 	function setTreasuryAddress (address _newAddress) external;
+
+	function setTreasuryAccumulationAddress (address _newAddress) external;
 
 	function setFeeConfig (uint256 _feeConfigRaw) external;
 

@@ -15,7 +15,9 @@ abstract contract ProtocolConfig {
 	address public holderLotteryPrizePoolAddress;
 	address public firstBuyLotteryPrizePoolAddress;
 	address public donationLotteryPrizePoolAddress;
-	address public devFundWalletAddress;
+	address public teamFeesAccumulationAddress;
+	address public treasuryFeesAccumulationAddress;
+	address public teamAddress;
 	address public treasuryAddress;
 
 	mapping( address => bool ) internal _isExcludedFromFee;
@@ -29,9 +31,10 @@ abstract contract ProtocolConfig {
 		holderLotteryPrizePoolAddress = _config.holderLotteryPrizePoolAddress;
 		firstBuyLotteryPrizePoolAddress = _config.firstBuyLotteryPrizePoolAddress;
 		donationLotteryPrizePoolAddress = _config.donationLotteryPrizePoolAddress;
-		devFundWalletAddress = _config.devFundWalletAddress;
+		teamFeesAccumulationAddress = _config.teamFeesAccumulationAddress;
+		treasuryFeesAccumulationAddress = _config.treasuryFeesAccumulationAddress;
+		teamAddress = _config.teamAddress;
 		treasuryAddress = _config.treasuryAddress;
-
 		_fees = _config.compact();
 	}
 
@@ -47,8 +50,16 @@ abstract contract ProtocolConfig {
 		donationLotteryPrizePoolAddress = _newAddress;
 	}
 
-	function _setDevFundWalletAddress (address _newAddress) internal {
-		devFundWalletAddress = _newAddress;
+	function _setTeamAddress (address _newAddress) internal {
+		teamAddress = _newAddress;
+	}
+
+	function _setTeamAccumulationAddress (address _newAddress) internal {
+		teamFeesAccumulationAddress = _newAddress;
+	}
+
+	function _setTreasuryAccumulationAddress (address _newAddress) internal {
+		treasuryFeesAccumulationAddress = _newAddress;
 	}
 
 	function _setTreasuryAddress (address _newAddress) internal {
