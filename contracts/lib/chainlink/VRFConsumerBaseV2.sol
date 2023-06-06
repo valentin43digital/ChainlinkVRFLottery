@@ -132,9 +132,9 @@ abstract contract VRFConsumerBaseV2 {
 		uint256[] memory randomWords
 	)
 	external {
-		// if (msg.sender != VRF_COORDINATOR) {
-		// revert OnlyCoordinatorCanFulfill(msg.sender, VRF_COORDINATOR);
-		// }
+		if (msg.sender != VRF_COORDINATOR) {
+		revert OnlyCoordinatorCanFulfill(msg.sender, VRF_COORDINATOR);
+		}
 		_fulfillRandomWords(requestId, randomWords);
 	}
 }
