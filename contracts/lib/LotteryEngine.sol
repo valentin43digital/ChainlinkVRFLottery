@@ -112,7 +112,6 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 		uint256 requestId = _requestRandomWords(1);
 		rounds[requestId].lotteryType = LotteryType.HOLDERS;
 		_runtimeCounter.resetHoldersLotteryCounter();
-		_counter = _runtimeCounter.store();
 	}
 
 	function _donationsLottery (
@@ -154,7 +153,6 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 			rounds[requestId].lotteryType = LotteryType.DONATION;
 
 			_runtimeCounter.resetDonationLotteryCounter();
-			_counter = _runtimeCounter.store();
 		}
 	}
 }

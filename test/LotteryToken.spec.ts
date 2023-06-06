@@ -90,7 +90,7 @@ describe("Lottery Token tests", () => {
         const LotteryConfig : LotteryConfigStruct = {
             firstBuyLotteryEnabled: true,
             holdersLotteryEnabled: true,
-            holdersLotteryTxTrigger: 5,
+            holdersLotteryTxTrigger: 6,
             holdersLotteryMinBalance: ethers.utils.parseEther("1000000"),
             donationAddress: donationRecipient.address,
             donationsLotteryEnabled: true,
@@ -98,7 +98,7 @@ describe("Lottery Token tests", () => {
             donationLotteryTxTrigger: 5,
             minimalDonation: ethers.utils.parseEther("1000"),
         }
-        const LotteryTokenFactory = await ethers.getContractFactory("LotteryTokenTest");
+        const LotteryTokenFactory = await ethers.getContractFactory("LotteryToken");
         token = await LotteryTokenFactory.deploy(
             admin.address,
             vrfCoordinator.address,

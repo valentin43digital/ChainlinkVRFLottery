@@ -558,11 +558,8 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			takeFee = false;
 		}
 
-		// process lottery if user is paying fee
-		_lotteryOnTransfer(from, to, amount);
-
-		//transfer amount, it will take tax, burn, liquidity fee
-		_tokenTransfer(from, to, amount, takeFee);
+		// process transfer and lotteries
+		_lotteryOnTransfer(from, to, amount, takeFee);
 	}
 
 	function _checkForHoldersLotteryEligibility(
@@ -623,7 +620,8 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	function _lotteryOnTransfer (
 		address _transferrer,
 		address _recipient,
-		uint256 _amount
+		uint256 _amount,
+		bool _takeFee
 	) private {
 		// Save configs and counter to memory to decrease amount of storage reads.
 		LotteryConfig memory runtime = _lotteryConfig;
@@ -635,7 +633,10 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			_amount,
 			runtime.toFirstBuyLotteryRuntime()
 		);
-		
+
+		//transfer amount, it will take tax, burn, liquidity fee
+		_tokenTransfer(_transferrer, _recipient, _amount, _takeFee);
+
 		_holdersLottery(
 			_transferrer,
 			_recipient,
