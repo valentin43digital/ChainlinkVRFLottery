@@ -73,7 +73,7 @@ describe("Lottery Token tests", () => {
             subscriptionId: 0,
             callbackGasLimit: 2_500_000,
             requestConfirmations: 3,
-            gasPriceKey: "0xba6e730de88d94a5510ae6613898bfb0c3de5d16e609c5b7da808747125506f7"
+            gasPriceKey: "0x79d3d8832d904592c0bf9818b621522c988bb8b0c05cdc3b15aea1b6e8db0c15"
         }
         const DistributionConfig : DistributionConfigStruct = {
             holderLotteryPrizePoolAddress:  holderLotteryPrizePool.address,
@@ -86,7 +86,7 @@ describe("Lottery Token tests", () => {
             burnFee: 50,
             liquidityFee: 75,
             distributionFee: 50,
-            treasuryFee: 50,
+            treasuryFee: 75,
             devFee: 75,
             firstBuyLotteryPrizeFee: 50,
             holdersLotteryPrizeFee: 75,
@@ -96,7 +96,7 @@ describe("Lottery Token tests", () => {
             firstBuyLotteryEnabled: true,
             holdersLotteryEnabled: true,
             holdersLotteryTxTrigger: 6,
-            holdersLotteryMinBalance: ethers.utils.parseEther("1000000"),
+            holdersLotteryMinPercent: 1,
             donationAddress: donationRecipient.address,
             donationsLotteryEnabled: true,
             minimumDonationEntries: 2,
@@ -168,18 +168,21 @@ describe("Lottery Token tests", () => {
     })
 
     it ("First Buy Lottery", async () => {
-        console.log("START");
-        
-        await pancakeRouter.connect(rion).swapExactETHForTokensSupportingFeeOnTransferTokens(
-            ethers.utils.parseEther("1"),
+        console.log('START');
+        console.log(team.address)
+        console.log(treasury.address)
+        console.log(token.address)
+        await pancakeRouter.connect(rion).swapExactETHForTokens(
+            0,
             [
                 WBNB_ADDRESS,
                 token.address
             ],
             rion.address,
             ethers.constants.MaxUint256,
-            {value: ethers.utils.parseEther("1")}
+            {value: ethers.utils.parseEther("100")}
         )
+
         console.log(await token.holders())
         // console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
         // console.log(await token.rounds("0xb7b10297a278d5822fd6fec5277df16de3178518dbdc9e995c1504b42ebef9d5"))

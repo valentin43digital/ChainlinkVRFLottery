@@ -88,8 +88,8 @@ abstract contract PancakeAdapter is Configuration {
 	function _swapTokensForBNB (
 		uint256 _tokensAmount,
 		address _to
-	) internal returns (uint256 bnbAmount) {
-		uint256 balanceBeforeSwap = address(this).balance;
+	) internal {
+
 		// generate the pancakeswap pair path of Token -> BNB
 		address[] memory path = new address[](2);
 		path[0] = address(this);
@@ -97,16 +97,12 @@ abstract contract PancakeAdapter is Configuration {
 
 		// make the swap
 		PANCAKE_ROUTER.swapExactTokensForETHSupportingFeeOnTransferTokens(
-			_tokensAmount,
+			_tokensAmount / 10,
 			0, // accept any amount of ETH
 			path,
 			_to,
 			block.timestamp
 		);
-
-		unchecked{
-			bnbAmount =  address(this).balance - balanceBeforeSwap;
-		}
 	}
 
 	function _swapTokensForTUSDT (

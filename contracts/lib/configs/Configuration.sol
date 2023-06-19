@@ -153,10 +153,10 @@ abstract contract Configuration is IConfiguration, VRFConsumerConfig,
         _setDonationLotteryTxTrigger(_txAmount);
     }
 
-    function setHoldersLotteryMinBalance (
-		uint256 _minBalance
+    function setHoldersLotteryMinPercent (
+		uint256 _minPercent
 	) external onlyOwner {
-        _setHoldersLotteryMinBalance(_minBalance);
+        _setHoldersLotteryMinPercent(_minPercent);
     }
 
     function setDonationAddress (
@@ -245,8 +245,8 @@ abstract contract Configuration is IConfiguration, VRFConsumerConfig,
         return _lotteryConfig.holdersLotteryTxTrigger;
     }
 
-    function holdersLotteryMinBalance () external view returns (uint256) {
-        return _lotteryConfig.holdersLotteryMinBalance;
+    function holdersLotteryMinPercent () external view returns (uint256) {
+        return _lotteryConfig.holdersLotteryMinPercent;
     }
 
     function donationAddress () external view returns (address) {

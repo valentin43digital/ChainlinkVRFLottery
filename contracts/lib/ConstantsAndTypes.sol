@@ -286,7 +286,7 @@ struct LotteryConfig {
 	bool firstBuyLotteryEnabled;
 	bool holdersLotteryEnabled;
     uint64 holdersLotteryTxTrigger;
-	uint256 holdersLotteryMinBalance;
+	uint256 holdersLotteryMinPercent;
 	address donationAddress;
 	bool donationsLotteryEnabled;
 	uint64 minimumDonationEntries;
@@ -309,7 +309,7 @@ struct FirstBuyLotteryConfig {
 struct HoldersLotteryConfig {
 	bool enabled;
     uint64 lotteryTxTrigger;
-	uint256 holdersLotteryMinBalance;
+	uint256 holdersLotteryMinPercent;
 }
 
 struct Holders {

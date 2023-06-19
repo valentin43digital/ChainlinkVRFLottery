@@ -33,6 +33,9 @@ import {
 	RandomWords,
 	toRandomWords
 } from "./lib/ConstantsAndTypes.sol";
+import {
+	IERC20
+} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract LotteryToken is LotteryEngine, ILotteryToken {
 
@@ -49,6 +52,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	error ApproveAmountIsZero ();
 	error AmountIsGreaterThanTotalReflections ();
 	error TransferAmountExceedsPurchaseAmount ();
+	error BNBWithdrawalFailed ();
 
 	event WhiteListTransfer(
 		address from,
@@ -93,9 +97,9 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		Locked
 	}
 
-	uint256 public liquiditySupplyThreshold = 1_000_000 * 1e18;
+	uint256 public liquiditySupplyThreshold = 1000 * 1e18;
 
-	uint256 public feeSupplyThreshold = 10_000_000 * 1e18;
+	uint256 public feeSupplyThreshold = 1000 * 1e18;
 
 	uint8 public immutable decimals = 18;
 	
@@ -103,6 +107,16 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		_lock = SwapStatus.Locked;
 		_;
 		_lock = SwapStatus.Open;
+	}
+
+	modifier swapLockOnPairCall {
+		if (msg.sender == PANCAKE_PAIR) {
+			_lock = SwapStatus.Locked;
+			_;
+			_lock = SwapStatus.Open;
+		} else {
+			_;
+		}
 	}
 
 	SwapStatus private _lock = SwapStatus.Open;
@@ -120,14 +134,13 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	uint256 public maxTxAmount = 
 		10_000_000_000 * 1e18;
 
-	uint256 public maxBuyAmount =
-		10_000_000_000 * 1e18;
+	uint256 public maxBuyPercent = 10_000;
 
 	uint256 private _rTotal = (MAX_UINT256 - (MAX_UINT256 % _tTotal));
 	uint256 private _tFeeTotal;
 
 	bool public swapAndLiquifyEnabled = true;
-
+	bool public threeDaysProtectionEnabled = false;
 
 	constructor (
 		address _mintSupplyTo,
@@ -158,6 +171,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		//exclude owner and this contract from fee
 		_isExcludedFromFee[owner()] = true;
 		_isExcludedFromFee[address(this)] = true;
+		_isExcludedFromFee[_lConfig.donationAddress] = true;
 		_isExcludedFromFee[_mintSupplyTo] = true;
 		_isExcludedFromFee[_dConfig.holderLotteryPrizePoolAddress] = true;
 		_isExcludedFromFee[_dConfig.firstBuyLotteryPrizePoolAddress] = true;
@@ -167,6 +181,8 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		_isExcludedFromFee[_dConfig.treasuryAddress] = true;
 		_isExcludedFromFee[_dConfig.treasuryFeesAccumulationAddress] = true;
 		_isExcludedFromFee[DEAD_ADDRESS] = true;
+
+		_approve(address(this), address(PANCAKE_ROUTER), type(uint256).max);
 	}
 
 	function name () public pure returns (string memory) {
@@ -483,31 +499,32 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			(PRECISION - _fees.all(_lotteryConfig.firstBuyLotteryEnabled)) / PRECISION);
 
 		// bot \ whales prevention
-		if (block.timestamp <= (_creationTime + 1 days)) {
-			allowedAmount = tSupply * DAY_ONE_LIMIT / PRECISION;
+		if (threeDaysProtectionEnabled) {
+			if (block.timestamp <= (_creationTime + 1 days)) {
+				allowedAmount = tSupply * DAY_ONE_LIMIT / PRECISION;
 
-			if (lastUserBalance >= allowedAmount) {
-				revert TransferAmountExceededForToday();
+				if (lastUserBalance >= allowedAmount) {
+					revert TransferAmountExceededForToday();
+				}
+			}
+			
+			if (block.timestamp <= (_creationTime + 2 days)) {
+				allowedAmount = tSupply * DAY_TWO_LIMIT / PRECISION;
+
+				if (lastUserBalance >= allowedAmount) {
+					revert TransferAmountExceededForToday();
+				}
+			} 
+			
+			if (block.timestamp <= (_creationTime + 3 days)) {
+				allowedAmount = tSupply * DAY_THREE_LIMIT / PRECISION;
+
+				if (lastUserBalance >= allowedAmount) {
+					revert TransferAmountExceededForToday();
+				}
 			}
 		}
-		
-		if (block.timestamp <= (_creationTime + 2 days)) {
-			allowedAmount = tSupply * DAY_TWO_LIMIT / PRECISION;
-
-			 if (lastUserBalance >= allowedAmount) {
-				revert TransferAmountExceededForToday();
-			}
-		} 
-		
-		if (block.timestamp <= (_creationTime + 3 days)) {
-			allowedAmount = tSupply * DAY_THREE_LIMIT / PRECISION;
-
-			 if (lastUserBalance >= allowedAmount) {
-				revert TransferAmountExceededForToday();
-			}
-		}
-
-		if (amount > maxBuyAmount) {
+		if (amount > balanceOf(PANCAKE_PAIR) * maxBuyPercent / PRECISION) {
 			revert TransferAmountExceedsPurchaseAmount();
 		}
 	}
@@ -516,7 +533,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		address from,
 		address to,
 		uint256 amount
-	) private {
+	) private swapLockOnPairCall {
 		if (from == address(0)) {
 			revert TransferFromZeroAddress();
 		}
@@ -526,15 +543,16 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		if (amount == 0) {
 			revert TransferAmountIsZero();
 		}
+		
 		uint256 contractTokenBalance = balanceOf(address(this));
 		// whitelist to allow treasure to add liquidity:
 		if (whitelist[from] || whitelist[to]) {
 			emit WhiteListTransfer(from, to, amount);
 		} else {
-			if( from == PANCAKE_PAIR || from == address(PANCAKE_ROUTER) ){
+			if( from == PANCAKE_PAIR ){
 				_antiAbuse(from, to, amount);
 			}
-
+			
 			// is the token balance of this contract address over the min number of
 			// tokens that we need to initiate a swap + liquidity lock?
 			// also, don't get caught in a circular liquidity event.
@@ -562,13 +580,16 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		bool takeFee = _isExcludedFromFee[from] || _isExcludedFromFee[to] ? 
 			false : true;
 
-		// process transfer and lotteries
+
 		_lotteryOnTransfer(from, to, amount, takeFee);
 
-		_distributeFees();
+		// process transfer and lotteries
+		if (_lock == SwapStatus.Open) {
+			_distributeFees();
+		}
 	}
 
-	function _distributeFees () private {
+	function _distributeFees () private lockTheSwap {
 		uint256 teamBalance = balanceOf(teamFeesAccumulationAddress);
 		if (teamBalance >= feeSupplyThreshold) {
 			uint256 balanceBefore = balanceOf(address(this));
@@ -585,12 +606,14 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			_swapTokensForTUSDT(forth, teamAddress);
 			_swapTokensForBNB(otherForth, teamAddress);
 			uint256 balanceAfter = balanceOf(address(this));
-			_tokenTransfer(
-				address(this),
-				teamAddress,
-				balanceAfter - balanceBefore + otherHalf,
-				false
-			);
+			if (balanceAfter > 0) {
+				_tokenTransfer(
+					address(this),
+					teamAddress,
+					balanceAfter - balanceBefore + otherHalf,
+					false
+				);
+			}
 		}
 		
 		uint256 treasuryBalance = balanceOf(treasuryFeesAccumulationAddress);
@@ -609,12 +632,14 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			_swapTokensForTUSDT(forth, treasuryAddress);
 			_swapTokensForBNB(otherForth, treasuryAddress);
 			uint256 balanceAfter = balanceOf(address(this));
-			_tokenTransfer(
-				address(this),
-				treasuryAddress,
-				balanceAfter - balanceBefore + otherHalf,
-				false
-			);
+			if (balanceAfter > 0) {
+				_tokenTransfer(
+					address(this),
+					treasuryAddress,
+					balanceAfter - balanceBefore + otherHalf,
+					false
+				);
+			}
 		}
 	}
 
@@ -643,6 +668,14 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		}
 	}
 
+	function _holdersEligibilityThreshold (
+		uint256 _minPercent
+	) private view returns (uint256) {
+		return (_tTotal - balanceOf(DEAD_ADDRESS)) *
+			_minPercent /
+			PRECISION;
+	}
+
 	function _holdersLottery (
 		address _transferrer,
 		address _recipient,
@@ -656,11 +689,12 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 
 		_checkForHoldersLotteryEligibility(
 			_transferrer,
-			_runtime.holdersLotteryMinBalance
+			_holdersEligibilityThreshold(_runtime.holdersLotteryMinPercent)
 		);
+		
 		_checkForHoldersLotteryEligibility(
 			_recipient,
-			_runtime.holdersLotteryMinBalance
+			_holdersEligibilityThreshold(_runtime.holdersLotteryMinPercent)
 		);
 
 		_triggerHoldersLottery(
@@ -713,17 +747,14 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		// split the contract balance into halves
 		uint256 half = contractTokenBalance / 2;
 		uint256 otherHalf = contractTokenBalance - half;
-
 		uint256 nativeBalance =  _swap(half);
 
 		// add liquidity to pancake
 		_liquify(otherHalf, nativeBalance);
-
 		emit SwapAndLiquify(half, nativeBalance, otherHalf);
 	}
 
 	function _swap(uint256 tokenAmount) private returns (uint256) {
-		_approve(address(this), address(PANCAKE_ROUTER), tokenAmount);
 		return _swapTokensForBNB(tokenAmount);
 	}
 
@@ -732,8 +763,6 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		uint256 bnbAmount
 	)
 	private {
-		// approve token transfer to cover all possible scenarios
-		_approve(address(this), address(PANCAKE_ROUTER), tokenAmount);
 		_addLiquidity(tokenAmount, bnbAmount);
 	}
 
@@ -992,7 +1021,9 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
         for( uint i = 0 ; i < holdersToCheck.length ; i ++ ){
             _checkForHoldersLotteryEligibility(
 				holdersToCheck[i],
-				_lotteryConfig.holdersLotteryMinBalance
+				(_tTotal - balanceOf(DEAD_ADDRESS)) *
+				_lotteryConfig.holdersLotteryMinPercent /
+				PRECISION
 			);
         }
     }
@@ -1033,8 +1064,8 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		maxTxAmount = _tTotal * maxTxPercent / PRECISION;
 	}
 
-	function setMaxBuyPercent (uint256 maxBuyPercent) external onlyOwner() {
-		maxBuyAmount = _tTotal * maxBuyPercent / PRECISION;
+	function setMaxBuyPercent (uint256 _maxBuyPercent) external onlyOwner() {
+		maxBuyPercent = _maxBuyPercent;
 	}
 
 	function setSwapAndLiquifyEnabled (bool _enabled) external onlyOwner {
@@ -1049,8 +1080,19 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		feeSupplyThreshold = _amount;
 	}
 
+	function setThreeDaysProtection (bool _enabled) external onlyOwner {
+		threeDaysProtectionEnabled = _enabled;
+	}
+
 	function withdraw (uint256 _amount) external onlyOwner {
 		_transferStandard(address(this), msg.sender, _amount, false);
+	}
+
+	function withdrawBNB (uint256 _amount) external onlyOwner {
+		(bool res, ) = msg.sender.call{value: _amount}("");
+		if (!res) {
+			revert BNBWithdrawalFailed();
+		}
 	}
 
 	function holders () external view returns (address[] memory) {

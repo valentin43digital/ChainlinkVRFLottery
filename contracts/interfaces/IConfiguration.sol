@@ -48,7 +48,7 @@ interface IConfiguration {
 
     function setDonationLotteryTxTrigger (uint64 _txAmount) external;
 
-    function setHoldersLotteryMinBalance (uint256 _minBalance) external;
+    function setHoldersLotteryMinPercent (uint256 _minPercent) external;
 
     function setDonationAddress (address _donationAddress) external;
 
@@ -82,7 +82,7 @@ interface IConfiguration {
 
     function holdersLotteryTxTrigger () external view returns (uint64);
 
-    function holdersLotteryMinBalance () external view returns (uint256);
+    function holdersLotteryMinPercent () external view returns (uint256);
 
     function donationAddress () external view returns (address);
 

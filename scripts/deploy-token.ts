@@ -39,7 +39,7 @@ async function main () {
         firstBuyLotteryEnabled: true,
         holdersLotteryEnabled: true,
         holdersLotteryTxTrigger: 6,
-        holdersLotteryMinBalance: ethers.utils.parseEther("10000"),
+        holdersLotteryMinPercent: 1,
         donationAddress: config.DONATE_TO,
         donationsLotteryEnabled: true,
         minimumDonationEntries: 2,

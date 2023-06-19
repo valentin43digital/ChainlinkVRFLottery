@@ -35,8 +35,8 @@ abstract contract LotteryEngineConfig {
         _lotteryConfig.donationLotteryTxTrigger = _txAmount;
     }
 
-    function _setHoldersLotteryMinBalance (uint256 _minBalance) internal {
-        _lotteryConfig.holdersLotteryMinBalance = _minBalance;
+    function _setHoldersLotteryMinPercent (uint256 _minPercent) internal {
+        _lotteryConfig.holdersLotteryMinPercent = _minPercent;
     }
 
     function _setDonationAddress (address _donationAddress) internal {
