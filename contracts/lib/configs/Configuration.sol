@@ -24,8 +24,6 @@ import {
 	LotteryEngineConfig
 } from "./LotteryEngineConfig.sol";
 
-import "hardhat/console.sol";
-
 abstract contract Configuration is IConfiguration, VRFConsumerConfig,
 	ProtocolConfig, LotteryEngineConfig, Ownable {
 	
@@ -55,12 +53,9 @@ abstract contract Configuration is IConfiguration, VRFConsumerConfig,
 	function _calcFeePercent() internal view returns (uint256) {
 		uint256 passed = feeDecreaseTimestamp - block.timestamp; 
 		uint256 currentFees = FEE_CAP * passed / feeDecreasePeriod;
-		console.log(passed, "passed");
-		console.log(feeDecreasePeriod, "feeDecreasePeriod");
 		if (_lotteryConfig.firstBuyLotteryEnabled) {
 			currentFees *= 2;
 		}
-		console.log(currentFees, "currentFees");
 		return currentFees >= FEE_CAP ? FEE_CAP : currentFees;
 	}
 
