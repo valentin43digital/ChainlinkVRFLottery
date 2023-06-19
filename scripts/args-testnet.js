@@ -8,8 +8,8 @@ const JACKPOT_POOL="0xbfCf9d6C0d2B86AC3438B4C1EB42c75ED289F71F";
 const DONATION_POOL="0xC341aF66BD390F29997B954b58A787fc0e6541a4";
 const HODL_POOL="0x2c14Fb0F3B87cBd040664aE35DcE51B6a8d1e2e6";
 const TEAM_ACCUMULATION = "0x0000000000000000000000000000000000000001";
-const TREASURY_ACCUMULATION = "0x0000000000000000000000000000000000000002"
-const FEE_DECAY_PERIOD = 7200
+const TREASURY_ACCUMULATION = "0x0000000000000000000000000000000000000002";
+
 const ConsumerConfig = {
     subscriptionId: 2937,
     callbackGasLimit: 2_500_000,
@@ -25,21 +25,21 @@ const ProtocolConfig = {
     treasuryAddress: TREASURY,
     teamFeesAccumulationAddress: TEAM_ACCUMULATION,
     treasuryFeesAccumulationAddress: TREASURY_ACCUMULATION,
-    burnFee: 1000,
-    liquidityFee: 1500,
-    distributionFee: 1000,
-    treasuryFee: 1000,
-    devFee: 1500,
-    firstBuyLotteryPrizeFee: 1000,
-    holdersLotteryPrizeFee: 1500,
-    donationLotteryPrizeFee: 1500
+    burnFee: 50,
+    liquidityFee: 75,
+    distributionFee: 50,
+    treasuryFee: 50,
+    devFee: 75,
+    firstBuyLotteryPrizeFee: 50,
+    holdersLotteryPrizeFee: 75,
+    donationLotteryPrizeFee: 75
 }
 
 const LotteryConfig = {
     firstBuyLotteryEnabled: true,
     holdersLotteryEnabled: true,
-    holdersLotteryTxTrigger: 5,
-    holdersLotteryMinBalance: "10000000000000000000000",
+    holdersLotteryTxTrigger: 6,
+    holdersLotteryMinPercent: 1,
     donationAddress: DONATE_TO,
     donationsLotteryEnabled: true,
     minimumDonationEntries: 2,
@@ -51,7 +51,7 @@ module.exports = [
     MINT_TO,
     COORDINATOR_ADDRESS,
     ROUTER_ADDRESS,
-    FEE_DECAY_PERIOD,
+    '7200',
     ConsumerConfig,
     ProtocolConfig,
     LotteryConfig
