@@ -31,7 +31,8 @@ import {
 	PRECISION,
 	LotteryType,
 	RandomWords,
-	toRandomWords
+	toRandomWords,
+	Fee
 } from "./lib/ConstantsAndTypes.sol";
 import {
 	IERC20
@@ -386,22 +387,23 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		bool takeFee
 	) private view returns (TInfo memory tt) {
 		uint256 fee = _calcFeePercent();
+		Fee fees = _fees;
 		tt.tBurnFee = takeFee ?
-			_fees.burnFeePercent(fee) * tAmount / PRECISION : 0;
+			fees.burnFeePercent(fee) * tAmount / PRECISION : 0;
 		tt.tDistributionFee = takeFee ?
-			_fees.distributionFeePercent(fee) * tAmount / PRECISION : 0;
+			fees.distributionFeePercent(fee) * tAmount / PRECISION : 0;
 		tt.tTreasuryFee = takeFee ?
-			_fees.treasuryFeePercent(fee) * tAmount / PRECISION : 0;
+			fees.treasuryFeePercent(fee) * tAmount / PRECISION : 0;
 		tt.tDevFundFee = takeFee ?
-			_fees.devFeePercent(fee) * tAmount / PRECISION : 0;
+			fees.devFeePercent(fee) * tAmount / PRECISION : 0;
 		tt.tFirstBuyPrizeFee = takeFee ?
-			_fees.firstBuyLotteryPrizeFeePercent(fee) * tAmount / PRECISION : 0;
+			fees.firstBuyLotteryPrizeFeePercent(fee) * tAmount / PRECISION : 0;
 		tt.tHolderPrizeFee = takeFee ?
-			_fees.holdersLotteryPrizeFeePercent(fee) * tAmount / PRECISION : 0;
+			fees.holdersLotteryPrizeFeePercent(fee) * tAmount / PRECISION : 0;
 		tt.tDonationLotteryPrizeFee = takeFee ?
-			_fees.donationLotteryPrizeFeePercent(fee) * tAmount / PRECISION : 0;
+			fees.donationLotteryPrizeFeePercent(fee) * tAmount / PRECISION : 0;
 		tt.tLiquidityFee = takeFee ? 
-			_fees.liquidityFeePercent(fee) * tAmount / PRECISION : 0;
+			fees.liquidityFeePercent(fee) * tAmount / PRECISION : 0;
 
 		uint totalFee = tt.tBurnFee + tt.tLiquidityFee + tt.tDistributionFee +
 			tt.tTreasuryFee + tt.tDevFundFee + tt.tFirstBuyPrizeFee +

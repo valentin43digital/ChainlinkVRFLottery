@@ -125,7 +125,7 @@ describe("Lottery Token tests", () => {
             DistributionConfig.holdersLotteryPrizeFee +
             DistributionConfig.donationLotteryPrizeFee
         );
-        await evm.evm_increaseTime(60*60*24*30*7)
+        await evm.evm_increaseTime(60*60*24*30*13)
         console.log(await token.burnFeePercent());
         console.log(await token.liquidityFeePercent());
         console.log(await token.distributionFeePercent());

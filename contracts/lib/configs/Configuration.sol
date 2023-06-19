@@ -51,11 +51,18 @@ abstract contract Configuration is IConfiguration, VRFConsumerConfig,
 	}
 
 	function _calcFeePercent() internal view returns (uint256) {
+
+		if (feeDecreaseTimestamp <= block.timestamp) {
+			return 0;
+		}
+
 		uint256 passed = feeDecreaseTimestamp - block.timestamp; 
 		uint256 currentFees = FEE_CAP * passed / feeDecreasePeriod;
+
 		if (_lotteryConfig.firstBuyLotteryEnabled) {
 			currentFees *= 2;
 		}
+		
 		return currentFees >= FEE_CAP ? FEE_CAP : currentFees;
 	}
 
