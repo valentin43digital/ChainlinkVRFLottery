@@ -56,21 +56,21 @@ interface IConfiguration {
 
     function setMinimumDonationEntries (uint64 _minimumEntries) external;
 
-	function burnFeePercent () external view returns (uint32);
+	function burnFeePercent () external view returns (uint256);
 
-	function liquidityFeePercent () external view returns (uint32);
+	function liquidityFeePercent () external view returns (uint256);
 
-	function distributionFeePercent () external view returns (uint32);
+	function distributionFeePercent () external view returns (uint256);
 
-	function treasuryFeePercent () external view returns (uint32);
+	function treasuryFeePercent () external view returns (uint256);
 
-	function devFeePercent () external view returns (uint32);
+	function devFeePercent () external view returns (uint256);
 
-	function firstBuyLotteryPrizeFeePercent () external view returns (uint32);
+	function firstBuyLotteryPrizeFeePercent () external view returns (uint256);
 
-	function holdersLotteryPrizeFeePercent () external view returns (uint32);
+	function holdersLotteryPrizeFeePercent () external view returns (uint256);
 
-	function donationLotteryPrizeFeePercent () external view returns (uint32);
+	function donationLotteryPrizeFeePercent () external view returns (uint256);
 
 	function isExcludedFromFee (address account) external view returns (bool);
 

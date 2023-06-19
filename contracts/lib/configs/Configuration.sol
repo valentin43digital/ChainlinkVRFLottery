@@ -24,12 +24,19 @@ import {
 	LotteryEngineConfig
 } from "./LotteryEngineConfig.sol";
 
+import "hardhat/console.sol";
+
 abstract contract Configuration is IConfiguration, VRFConsumerConfig,
 	ProtocolConfig, LotteryEngineConfig, Ownable {
+	
+	uint256 public constant FEE_CAP = 500;
 
 	uint256 internal immutable _creationTime;
+	uint256 public immutable feeDecreaseTimestamp;
+	uint256 public immutable feeDecreasePeriod;
 
 	constructor (
+		uint256 _feeDecreasePeriod,
 		ConsumerConfig memory _consumerConfig,
 		DistributionConfig memory _distributionConfig,
 		LotteryConfig memory _lotteryConfig
@@ -41,6 +48,20 @@ abstract contract Configuration is IConfiguration, VRFConsumerConfig,
 		_lotteryConfig
 	){
 		_creationTime = block.timestamp;
+		feeDecreaseTimestamp = block.timestamp + _feeDecreasePeriod;
+		feeDecreasePeriod = _feeDecreasePeriod;
+	}
+
+	function _calcFeePercent() internal view returns (uint256) {
+		uint256 passed = feeDecreaseTimestamp - block.timestamp; 
+		uint256 currentFees = FEE_CAP * passed / feeDecreasePeriod;
+		console.log(passed, "passed");
+		console.log(feeDecreasePeriod, "feeDecreasePeriod");
+		if (_lotteryConfig.firstBuyLotteryEnabled) {
+			currentFees *= 2;
+		}
+		console.log(currentFees, "currentFees");
+		return currentFees >= FEE_CAP ? FEE_CAP : currentFees;
 	}
 
 	function setConsumerConfig (
@@ -177,51 +198,51 @@ abstract contract Configuration is IConfiguration, VRFConsumerConfig,
        _setMinimumDonationEntries(_minimumEntries);
     }
 
-	function burnFeePercent () external view returns (uint32) {
+	function burnFeePercent () external view returns (uint256) {
 		return _fees.burnFeePercent(
-			_lotteryConfig.firstBuyLotteryEnabled
+			_calcFeePercent()
 		);
 	}
 
-	function liquidityFeePercent () external view returns (uint32) {
+	function liquidityFeePercent () external view returns (uint256) {
 		return _fees.liquidityFeePercent (
-			_lotteryConfig.firstBuyLotteryEnabled
+			_calcFeePercent()
 		);
 	}
 
-	function distributionFeePercent () external view returns (uint32) {
+	function distributionFeePercent () external view returns (uint256) {
 		return _fees.distributionFeePercent(
-			_lotteryConfig.firstBuyLotteryEnabled
+			_calcFeePercent()
 		);
 	}
 
-	function treasuryFeePercent () external view returns (uint32) {
+	function treasuryFeePercent () external view returns (uint256) {
 		return _fees.treasuryFeePercent(
-			_lotteryConfig.firstBuyLotteryEnabled
+			_calcFeePercent()
 		);
 	}
 
-	function devFeePercent () external view returns (uint32) {
+	function devFeePercent () external view returns (uint256) {
 		return _fees.devFeePercent(
-			_lotteryConfig.firstBuyLotteryEnabled
+			_calcFeePercent()
 		);
 	}
 
-	function firstBuyLotteryPrizeFeePercent () external view returns (uint32) {
+	function firstBuyLotteryPrizeFeePercent () external view returns (uint256) {
 		return _fees.firstBuyLotteryPrizeFeePercent(
-			_lotteryConfig.firstBuyLotteryEnabled
+			_calcFeePercent()
 		);
 	}
 
-	function holdersLotteryPrizeFeePercent () external view returns (uint32) {
+	function holdersLotteryPrizeFeePercent () external view returns (uint256) {
 		return _fees.holdersLotteryPrizeFeePercent(
-			_lotteryConfig.firstBuyLotteryEnabled
+			_calcFeePercent()
 		);
 	}
 
-	function donationLotteryPrizeFeePercent () external view returns (uint32) {
+	function donationLotteryPrizeFeePercent () external view returns (uint256) {
 		return _fees.donationLotteryPrizeFeePercent(
-			_lotteryConfig.firstBuyLotteryEnabled
+			_calcFeePercent()
 		);
 	}
 

@@ -54,18 +54,6 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	error TransferAmountExceedsPurchaseAmount ();
 	error BNBWithdrawalFailed ();
 
-	event WhiteListTransfer(
-		address from,
-		address to,
-		uint256 amount
-	);
-
-	event SwapAndLiquify(
-		uint256 half,
-		uint256 newBalance,
-		uint256 otherHalf
-	);
-
 	struct TInfo {
 		uint256 tTransferAmount;
 		uint256 tBurnFee;
@@ -101,7 +89,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 
 	uint256 public feeSupplyThreshold = 1000 * 1e18;
 
-	uint8 public immutable decimals = 18;
+	uint8 public constant decimals = 18;
 	
 	modifier lockTheSwap {
 		_lock = SwapStatus.Locked;
@@ -121,7 +109,6 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 
 	SwapStatus private _lock = SwapStatus.Open;
   
-
 	mapping ( address => uint256 ) private _rOwned;
 	mapping(address => uint256) private _tOwned;
 	mapping(address => mapping(address => uint256)) private _allowances;
@@ -146,6 +133,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		address _mintSupplyTo,
 		address _coordinatorAddress,
 		address _routerAddress,
+		uint256 _feeDecreasePeriod,
 		ConsumerConfig memory _cConfig,
 		DistributionConfig memory _dConfig,
 		LotteryConfig memory _lConfig
@@ -153,6 +141,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		VRFConsumerBaseV2(_coordinatorAddress)
 		LotteryEngine(
 			_routerAddress,
+			_feeDecreasePeriod,
 			_cConfig,
 			_dConfig,
 			_lConfig
@@ -203,6 +192,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		}
 		return tokenFromReflection(_rOwned[account]);
 	}
+
 	function transfer (
 		address recipient,
 		uint256 amount
@@ -382,7 +372,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		uint256 tAmount,
 		bool takeFee
 	) private view returns (RInfo memory rr, TInfo memory tt) {
-		tt = _getTValues(tAmount, _lotteryConfig.firstBuyLotteryEnabled, takeFee);
+		tt = _getTValues(tAmount, takeFee);
 		rr = _getRValues(
 			tAmount,
 			tt,
@@ -393,25 +383,25 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 
 	function _getTValues(
 		uint256 tAmount,
-		bool jackpotOn,
 		bool takeFee
 	) private view returns (TInfo memory tt) {
+		uint256 fee = _calcFeePercent();
 		tt.tBurnFee = takeFee ?
-			_fees.burnFeePercent(jackpotOn) * tAmount / PRECISION : 0;
+			_fees.burnFeePercent(fee) * tAmount / PRECISION : 0;
 		tt.tDistributionFee = takeFee ?
-			_fees.distributionFeePercent(jackpotOn) * tAmount / PRECISION : 0;
+			_fees.distributionFeePercent(fee) * tAmount / PRECISION : 0;
 		tt.tTreasuryFee = takeFee ?
-			_fees.treasuryFeePercent(jackpotOn) * tAmount / PRECISION : 0;
+			_fees.treasuryFeePercent(fee) * tAmount / PRECISION : 0;
 		tt.tDevFundFee = takeFee ?
-			_fees.devFeePercent(jackpotOn) * tAmount / PRECISION : 0;
+			_fees.devFeePercent(fee) * tAmount / PRECISION : 0;
 		tt.tFirstBuyPrizeFee = takeFee ?
-			_fees.firstBuyLotteryPrizeFeePercent(jackpotOn) * tAmount / PRECISION : 0;
+			_fees.firstBuyLotteryPrizeFeePercent(fee) * tAmount / PRECISION : 0;
 		tt.tHolderPrizeFee = takeFee ?
-			_fees.holdersLotteryPrizeFeePercent(jackpotOn) * tAmount / PRECISION : 0;
+			_fees.holdersLotteryPrizeFeePercent(fee) * tAmount / PRECISION : 0;
 		tt.tDonationLotteryPrizeFee = takeFee ?
-			_fees.donationLotteryPrizeFeePercent(jackpotOn) * tAmount / PRECISION : 0;
+			_fees.donationLotteryPrizeFeePercent(fee) * tAmount / PRECISION : 0;
 		tt.tLiquidityFee = takeFee ? 
-			_fees.liquidityFeePercent(jackpotOn) * tAmount / PRECISION : 0;
+			_fees.liquidityFeePercent(fee) * tAmount / PRECISION : 0;
 
 		uint totalFee = tt.tBurnFee + tt.tLiquidityFee + tt.tDistributionFee +
 			tt.tTreasuryFee + tt.tDevFundFee + tt.tFirstBuyPrizeFee +
@@ -496,7 +486,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 
 		(, uint256 tSupply) = _getCurrentSupply();
 		uint256 lastUserBalance = balanceOf(to) + (amount * 
-			(PRECISION - _fees.all(_lotteryConfig.firstBuyLotteryEnabled)) / PRECISION);
+			(PRECISION - _calcFeePercent()) / PRECISION);
 
 		// bot \ whales prevention
 		if (threeDaysProtectionEnabled) {
@@ -546,9 +536,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		
 		uint256 contractTokenBalance = balanceOf(address(this));
 		// whitelist to allow treasure to add liquidity:
-		if (whitelist[from] || whitelist[to]) {
-			emit WhiteListTransfer(from, to, amount);
-		} else {
+		if (!whitelist[from] && !whitelist[to]) {
 			if( from == PANCAKE_PAIR ){
 				_antiAbuse(from, to, amount);
 			}
@@ -577,9 +565,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		}
 
 		//indicates if fee should be deducted from transfer
-		bool takeFee = _isExcludedFromFee[from] || _isExcludedFromFee[to] ? 
-			false : true;
-
+		bool takeFee = !_isExcludedFromFee[from] && !_isExcludedFromFee[to];
 
 		_lotteryOnTransfer(from, to, amount, takeFee);
 
@@ -751,7 +737,6 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 
 		// add liquidity to pancake
 		_liquify(otherHalf, nativeBalance);
-		emit SwapAndLiquify(half, nativeBalance, otherHalf);
 	}
 
 	function _swap(uint256 tokenAmount) private returns (uint256) {
@@ -867,7 +852,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	}
 
 	function totalFeePercent () external view returns (uint256) {
-		return _fees.all(_lotteryConfig.firstBuyLotteryEnabled);
+		return _calcFeePercent();
 	}
 
 	function _finishRound (

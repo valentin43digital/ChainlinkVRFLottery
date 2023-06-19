@@ -83,14 +83,14 @@ describe("Lottery Token tests", () => {
             treasuryAddress: treasury.address,
             teamFeesAccumulationAddress: teamAccumlation.address,
             treasuryFeesAccumulationAddress: treasuryAccumulation.address,
-            burnFee: 50,
-            liquidityFee: 75,
-            distributionFee: 50,
-            treasuryFee: 75,
-            devFee: 75,
-            firstBuyLotteryPrizeFee: 50,
-            holdersLotteryPrizeFee: 75,
-            donationLotteryPrizeFee: 75
+            burnFee: 1000,
+            liquidityFee: 1500,
+            distributionFee: 1000,
+            treasuryFee: 1000,
+            devFee: 1500,
+            firstBuyLotteryPrizeFee: 1000,
+            holdersLotteryPrizeFee: 1500,
+            donationLotteryPrizeFee: 1500
         }
         const LotteryConfig : LotteryConfigStruct = {
             firstBuyLotteryEnabled: true,
@@ -104,15 +104,36 @@ describe("Lottery Token tests", () => {
             minimalDonation: ethers.utils.parseEther("1000"),
         }
         const LotteryTokenFactory = await ethers.getContractFactory("LotteryToken");
+
         token = await LotteryTokenFactory.deploy(
             admin.address,
             vrfCoordinator.address,
             pancakeRouter.address,
+            60*60*24*30*12,
             ConsumerConfig,
             DistributionConfig,
             LotteryConfig
+            );
+            
+        console.log(
+            DistributionConfig.burnFee +
+            DistributionConfig.liquidityFee +
+            DistributionConfig.distributionFee +
+            DistributionConfig.treasuryFee +
+            DistributionConfig.devFee +
+            DistributionConfig.firstBuyLotteryPrizeFee +
+            DistributionConfig.holdersLotteryPrizeFee +
+            DistributionConfig.donationLotteryPrizeFee
         );
-
+        await evm.evm_increaseTime(60*60*24*30*7)
+        console.log(await token.burnFeePercent());
+        console.log(await token.liquidityFeePercent());
+        console.log(await token.distributionFeePercent());
+        console.log(await token.treasuryFeePercent());
+        console.log(await token.devFeePercent());
+        console.log(await token.firstBuyLotteryPrizeFeePercent());
+        console.log(await token.holdersLotteryPrizeFeePercent());
+        console.log(await token.donationLotteryPrizeFeePercent());
         link = await ethers.getContractAt("LinkToken", LINK_ADDRESS)
         peg_link = await ethers.getContractAt("IERC20", PEG_LINK_ADDRESS)
 

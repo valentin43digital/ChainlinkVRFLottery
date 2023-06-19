@@ -43,80 +43,58 @@ library TypesHelpers {
 
     function burnFeePercent (
 		Fee feeConfig,
-		bool _jackPotEnabled
-	) internal pure returns (uint32) {
-		uint32 fee = uint32(Fee.unwrap(feeConfig) >> 224);
-		return _jackPotEnabled ? fee * 2 : fee;
+		uint256 fee
+	) internal pure returns (uint256) {
+		return fee * uint32(Fee.unwrap(feeConfig) >> 224) / PRECISION;
 	}
 
 	function liquidityFeePercent (
 		Fee feeConfig,
-		bool _jackPotEnabled
-	) internal pure returns (uint32) {
-		uint32 fee = uint32(Fee.unwrap(feeConfig) >> 192);
-		return _jackPotEnabled ? fee * 2 : fee;
+		uint256 fee
+	) internal pure returns (uint256) {
+		return fee * uint32(Fee.unwrap(feeConfig) >> 192) / PRECISION;
 	}
 
 	function distributionFeePercent (
 		Fee feeConfig,
-		bool _jackPotEnabled
-	) internal pure returns (uint32) {
-		uint32 fee = uint32(Fee.unwrap(feeConfig) >> 160);
-		return _jackPotEnabled ? fee * 2 : fee;
+		uint256 fee
+	) internal pure returns (uint256) {
+		return fee * uint32(Fee.unwrap(feeConfig) >> 160) / PRECISION;
 	}
 
 	function treasuryFeePercent (
 		Fee feeConfig,
-		bool _jackPotEnabled
-	) internal pure returns (uint32) {
-		uint32 fee = uint32(Fee.unwrap(feeConfig) >> 128);
-		return _jackPotEnabled ? fee * 2 : fee;
+		uint256 fee
+	) internal pure returns (uint256) {
+		return fee * uint32(Fee.unwrap(feeConfig) >> 128) / PRECISION;
 	}
 
 	function devFeePercent (
 		Fee feeConfig,
-		bool _jackPotEnabled
-	) internal pure returns (uint32) {
-		uint32 fee = uint32(Fee.unwrap(feeConfig) >> 96);
-		return _jackPotEnabled ? fee * 2 : fee;
+		uint256 fee
+	) internal pure returns (uint256) {
+		return fee * uint32(Fee.unwrap(feeConfig) >> 96) / PRECISION;
 	}
 
 	function firstBuyLotteryPrizeFeePercent (
 		Fee feeConfig,
-		bool _jackPotEnabled
-	) internal pure returns (uint32) {
-		uint32 fee = uint32(Fee.unwrap(feeConfig) >> 64);
-		return _jackPotEnabled ? fee * 2 : fee;
+		uint256 fee
+	) internal pure returns (uint256) {
+		return fee * uint32(Fee.unwrap(feeConfig) >> 64) / PRECISION;
 	}
 
 	function holdersLotteryPrizeFeePercent (
 		Fee feeConfig,
-		bool _jackPotEnabled
-	) internal pure returns (uint32) {
-		uint32 fee = uint32(Fee.unwrap(feeConfig) >> 32);
-		return _jackPotEnabled ? fee * 2 : fee;
+		uint256 fee
+	) internal pure returns (uint256) {
+		return fee * uint32(Fee.unwrap(feeConfig) >> 32) / PRECISION;
 	}
 
 	function donationLotteryPrizeFeePercent (
 		Fee feeConfig,
-		bool _jackPotEnabled
-	) internal pure returns (uint32) {
-		uint32 fee = uint32(Fee.unwrap(feeConfig));
-		return _jackPotEnabled ? fee * 2 : fee;
-	}
-
-	function all (
-		Fee feeConfig,
-		bool _jackPotEnabled
+		uint256 fee
 	) internal pure returns (uint256) {
-		return burnFeePercent(feeConfig, _jackPotEnabled) +
-		liquidityFeePercent(feeConfig, _jackPotEnabled) +
-		distributionFeePercent(feeConfig, _jackPotEnabled) +
-		treasuryFeePercent(feeConfig, _jackPotEnabled) +
-		devFeePercent(feeConfig, _jackPotEnabled) +
-		firstBuyLotteryPrizeFeePercent(feeConfig, _jackPotEnabled) +
-		holdersLotteryPrizeFeePercent(feeConfig, _jackPotEnabled) +
-		donationLotteryPrizeFeePercent(feeConfig, _jackPotEnabled);
+		return fee * uint32(Fee.unwrap(feeConfig)) / PRECISION;
 	}
 
 	function toDonationLotteryRuntime (

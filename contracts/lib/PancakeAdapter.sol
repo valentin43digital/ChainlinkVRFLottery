@@ -33,10 +33,12 @@ abstract contract PancakeAdapter is Configuration {
 
 	constructor (
 		address _routerAddress,
+		uint256 _feeDecreasePeriod,
 		ConsumerConfig memory _consumerConfig,
 		DistributionConfig memory _distributionConfig,
 		LotteryConfig memory _lotteryConfig
 	) Configuration(
+		_feeDecreasePeriod,
 		_consumerConfig,
 		_distributionConfig,
 		_lotteryConfig
