@@ -51,7 +51,7 @@ module.exports = [
     MINT_TO,
     COORDINATOR_ADDRESS,
     ROUTER_ADDRESS,
-    500,
+    400,
     ConsumerConfig,
     ProtocolConfig,
     LotteryConfig
