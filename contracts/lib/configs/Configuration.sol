@@ -181,7 +181,7 @@ abstract contract Configuration is IConfiguration, VRFConsumerConfig,
         _setDonationAddress(_donationAddress);
     }
 
-    function setMinimanDonation (
+    function setMinimalDonation (
 		uint256 _minimalDonation
 	) external onlyOwner {
         _setMinimanDonation(_minimalDonation);

@@ -52,7 +52,9 @@ interface IConfiguration {
 
     function setDonationAddress (address _donationAddress) external;
 
-    function setMinimanDonation (uint256 _minimalDonation) external;
+    function setMinimalDonation (uint256 _minimalDonation) external;
+
+	function setFees (uint256 _fee) external;
 
     function setMinimumDonationEntries (uint64 _minimumEntries) external;
 
