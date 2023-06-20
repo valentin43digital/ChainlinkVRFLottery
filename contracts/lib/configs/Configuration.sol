@@ -30,11 +30,10 @@ abstract contract Configuration is IConfiguration, VRFConsumerConfig,
 	uint256 public constant FEE_CAP = 500;
 
 	uint256 internal immutable _creationTime;
-	uint256 public immutable feeDecreaseTimestamp;
-	uint256 public immutable feeDecreasePeriod;
+	uint256 public fee;
 
 	constructor (
-		uint256 _feeDecreasePeriod,
+		uint256 _fee,
 		ConsumerConfig memory _consumerConfig,
 		DistributionConfig memory _distributionConfig,
 		LotteryConfig memory _lotteryConfig
@@ -45,19 +44,13 @@ abstract contract Configuration is IConfiguration, VRFConsumerConfig,
 	) LotteryEngineConfig(
 		_lotteryConfig
 	){
+		fee = _fee;
 		_creationTime = block.timestamp;
-		feeDecreaseTimestamp = block.timestamp + _feeDecreasePeriod;
-		feeDecreasePeriod = _feeDecreasePeriod;
 	}
 
 	function _calcFeePercent() internal view returns (uint256) {
 
-		if (feeDecreaseTimestamp <= block.timestamp) {
-			return 0;
-		}
-
-		uint256 passed = feeDecreaseTimestamp - block.timestamp; 
-		uint256 currentFees = FEE_CAP * passed / feeDecreasePeriod;
+		uint256 currentFees = fee;
 
 		if (_lotteryConfig.firstBuyLotteryEnabled) {
 			currentFees *= 2;
@@ -192,6 +185,12 @@ abstract contract Configuration is IConfiguration, VRFConsumerConfig,
 		uint256 _minimalDonation
 	) external onlyOwner {
         _setMinimanDonation(_minimalDonation);
+    }
+
+	function setFees (
+		uint256 _fee
+	) external onlyOwner {
+        fee = _fee;
     }
 
     function setMinimumDonationEntries (

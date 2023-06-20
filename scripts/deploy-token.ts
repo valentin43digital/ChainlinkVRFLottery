@@ -52,7 +52,7 @@ async function main () {
         config.MINT_TO,
         config.VRF_COORDINATOR_ADDRESS,
         config.PANCAKE_ROUTER_ADDRESS,
-        60*60*2,
+        500,
         ConsumerConfig,
         ProtocolConfig,
         LotteryConfig

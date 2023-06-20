@@ -25,14 +25,14 @@ const ProtocolConfig = {
     treasuryAddress: TREASURY,
     teamFeesAccumulationAddress: TEAM_ACCUMULATION,
     treasuryFeesAccumulationAddress: TREASURY_ACCUMULATION,
-    burnFee: 50,
-    liquidityFee: 75,
-    distributionFee: 50,
-    treasuryFee: 50,
-    devFee: 75,
-    firstBuyLotteryPrizeFee: 50,
-    holdersLotteryPrizeFee: 75,
-    donationLotteryPrizeFee: 75
+    burnFee: 1000,
+    liquidityFee: 1500,
+    distributionFee: 1000,
+    treasuryFee: 1000,
+    devFee: 1500,
+    firstBuyLotteryPrizeFee: 1000,
+    holdersLotteryPrizeFee: 1500,
+    donationLotteryPrizeFee: 1500
 }
 
 const LotteryConfig = {
@@ -51,7 +51,7 @@ module.exports = [
     MINT_TO,
     COORDINATOR_ADDRESS,
     ROUTER_ADDRESS,
-    '7200',
+    500,
     ConsumerConfig,
     ProtocolConfig,
     LotteryConfig

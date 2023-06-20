@@ -36,7 +36,6 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 
 	mapping ( uint256 => LotteryRound) public rounds;
 
-	mapping ( address => bool ) private _bought;
 	mapping ( address => uint256 ) private _nextDonationTimstamp;
 	address[] internal _donators;
 	Holders internal _holders;
@@ -45,13 +44,13 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 
 	constructor (
 		address _routerAddress,
-		uint256 _feeDecreasePeriod,
+		uint256 _fee,
 		ConsumerConfig memory _consumerConfig,
 		DistributionConfig memory _distributionConfig,
 		LotteryConfig memory _lotteryConfig
 	) PancakeAdapter(
 		_routerAddress,
-		_feeDecreasePeriod,
+		_fee,
 		_consumerConfig,
 		_distributionConfig,
 		_lotteryConfig
@@ -82,10 +81,6 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 				return;
 			}
 
-			if (_bought[_recipient]) {
-				return;
-			}
-			_bought[_recipient] = true;
 			uint256 usdAmount = _TokenPriceInUSD(_amount) /  _TUSD_DECIMALS;
 			uint256 hundreds = usdAmount / 100;
 			if (hundreds == 0) {

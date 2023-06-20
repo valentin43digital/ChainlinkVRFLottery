@@ -134,7 +134,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		address _mintSupplyTo,
 		address _coordinatorAddress,
 		address _routerAddress,
-		uint256 _feeDecreasePeriod,
+		uint256 _fee,
 		ConsumerConfig memory _cConfig,
 		DistributionConfig memory _dConfig,
 		LotteryConfig memory _lConfig
@@ -142,7 +142,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		VRFConsumerBaseV2(_coordinatorAddress)
 		LotteryEngine(
 			_routerAddress,
-			_feeDecreasePeriod,
+			_fee,
 			_cConfig,
 			_dConfig,
 			_lConfig

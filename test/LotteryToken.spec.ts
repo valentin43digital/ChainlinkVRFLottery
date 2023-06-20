@@ -109,7 +109,7 @@ describe("Lottery Token tests", () => {
             admin.address,
             vrfCoordinator.address,
             pancakeRouter.address,
-            60*60*24*30*12,
+            125,
             ConsumerConfig,
             DistributionConfig,
             LotteryConfig
@@ -125,7 +125,7 @@ describe("Lottery Token tests", () => {
             DistributionConfig.holdersLotteryPrizeFee +
             DistributionConfig.donationLotteryPrizeFee
         );
-        await evm.evm_increaseTime(60*60*24*30*13)
+        await evm.evm_increaseTime(60*60*24*30*6)
         console.log(await token.burnFeePercent());
         console.log(await token.liquidityFeePercent());
         console.log(await token.distributionFeePercent());
