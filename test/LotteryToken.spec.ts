@@ -109,7 +109,7 @@ describe("Lottery Token tests", () => {
             admin.address,
             vrfCoordinator.address,
             pancakeRouter.address,
-            125,
+            400,
             ConsumerConfig,
             DistributionConfig,
             LotteryConfig
