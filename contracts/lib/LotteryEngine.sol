@@ -168,8 +168,7 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 			revert NoDonationTicketsToTransfer ();
 		}
 
-		uint256[] memory tickets = _donatorTicketIdxs[msg.sender];
-		uint256 idx = tickets[length - 1];
+		uint256 idx = _donatorTicketIdxs[msg.sender][length - 1];
 		_donatorTicketIdxs[msg.sender].pop();
 		_donators[idx] = _to;
 		_donatorTicketIdxs[_to].push(idx);
