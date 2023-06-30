@@ -996,6 +996,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		_round.lotteryType = LotteryType.FINISHED_DONATION;
 
 		delete _donators;
+		_donationRound += 1;
 	}
 
 	function donate (uint256 _amount) external {
