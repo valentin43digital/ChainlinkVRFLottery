@@ -34,9 +34,14 @@ import {
 */
 abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 
+	error NoDonationTicketsToTransfer ();
+
 	mapping ( uint256 => LotteryRound) public rounds;
 
-	mapping ( address => uint256 ) private _nextDonationTimstamp;
+	uint256 internal _donationRound;
+	mapping ( address => uint256 ) private _nextDonationTimestamp;
+	mapping( uint256 => 
+		mapping ( address => uint256[] ) ) internal _donatorTicketIdxs;
 	address[] internal _donators;
 	Holders internal _holders;
 
@@ -131,9 +136,11 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 				_recipient == _runtime.donationAddress && 
 					_amount >= _runtime.minimalDonation
 			) {
-				if (block.timestamp > _nextDonationTimstamp[_transferrer]) {
+				if (block.timestamp > _nextDonationTimestamp[_transferrer]) {
+					uint256 length = _donators.length;
 					_donators.push(_transferrer);
-					_nextDonationTimstamp[_transferrer] = 
+					_donatorTicketIdxs[_donationRound][_transferrer].push(length);
+					_nextDonationTimestamp[_transferrer] = 
 						block.timestamp + DONATION_TICKET_TIMEOUT;
 				}
 			}
@@ -155,5 +162,26 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 
 			_runtimeCounter.resetDonationLotteryCounter();
 		}
+	}
+
+	function transferDonationTicket (address _to) external {
+		uint256 round = _donationRound;
+		uint256 length = _donatorTicketIdxs[round][msg.sender].length;
+		if (length == 0) {
+			revert NoDonationTicketsToTransfer ();
+		}
+
+		uint256 idx = _donatorTicketIdxs[round][msg.sender][length - 1];
+		_donatorTicketIdxs[round][msg.sender].pop();
+		_donators[idx] = _to;
+		_donatorTicketIdxs[round][_to].push(idx);
+	}
+
+	function holdersLotteryTickets () external view returns (address[] memory) {
+		return _holders.array;
+	}
+
+	function donationLotteryTickets () external view returns (address[] memory) {
+		return _donators;
 	}
 }

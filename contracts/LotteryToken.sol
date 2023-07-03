@@ -130,6 +130,13 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	bool public swapAndLiquifyEnabled = true;
 	bool public threeDaysProtectionEnabled = false;
 
+	uint256 public fristButWinTimes;
+	uint256 public donationLotteryWinTimes;
+	uint256 public holdersLotteryWinTimes;
+	uint256 public totalAmountWonInFirstBuyLottery;
+	uint256 public totalAmountWonInDonationLottery;
+	uint256 public totalAmountWonInHoldersLottery;
+
 	constructor (
 		address _mintSupplyTo,
 		address _coordinatorAddress,
@@ -935,7 +942,8 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 				prize,
 				false
 			);
-
+			totalAmountWonInFirstBuyLottery += prize;
+			fristButWinTimes += 1;
 			_round.winner = player;
 			_round.prize = prize;
 		}
@@ -966,7 +974,9 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			prize,
 			false
 		);
-		
+
+		holdersLotteryWinTimes += 1;
+		totalAmountWonInHoldersLottery += prize;
 		_round.winner = winner;
 		_round.prize = prize;
 		_round.lotteryType = LotteryType.FINISHED_HOLDERS;
@@ -991,11 +1001,14 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			false
 		);
 		
+		donationLotteryWinTimes += 1;
+		totalAmountWonInDonationLottery += prize;
 		_round.winner = winner;
 		_round.prize = prize;
 		_round.lotteryType = LotteryType.FINISHED_DONATION;
 
 		delete _donators;
+		_donationRound += 1;
 	}
 
 	function donate (uint256 _amount) external {
