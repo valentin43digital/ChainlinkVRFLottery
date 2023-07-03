@@ -176,4 +176,12 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 		_donators[idx] = _to;
 		_donatorTicketIdxs[round][_to].push(idx);
 	}
+
+	function holdersLotteryTickets () external view returns (address[] memory) {
+		return _holders.array;
+	}
+
+	function donationLotteryTickets () external view returns (address[] memory) {
+		return _donators;
+	}
 }
