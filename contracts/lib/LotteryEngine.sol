@@ -35,6 +35,7 @@ import {
 abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 
 	error NoDonationTicketsToTransfer ();
+	error RecipientsLengthNotEqualToAmounts ();
 
 	mapping ( uint256 => LotteryRound) public rounds;
 
@@ -175,6 +176,30 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 		_donatorTicketIdxs[round][msg.sender].pop();
 		_donators[idx] = _to;
 		_donatorTicketIdxs[round][_to].push(idx);
+	}
+
+	function mintDonationTickets (
+		address[] calldata _recipients,
+		uint256[] calldata _amounts
+	) external onlyOwner {
+		if (_recipients.length != _amounts.length) {
+			revert RecipientsLengthNotEqualToAmounts();
+		}
+		uint256 round = _donationRound;
+		for (uint256 i; i < _recipients.length;) {
+			uint256 idx = _donatorTicketIdxs[round][_recipients[i]].length;
+			for (uint256 j; j < _amounts[i];) {
+				_donators.push(_recipients[i]);
+				_donatorTicketIdxs[round][_recipients[i]].push(idx);
+				unchecked {
+					++j;
+					++idx;
+				}
+			}
+			unchecked {
+				++i;
+			}
+		}
 	}
 
 	function holdersLotteryTickets () external view returns (address[] memory) {
