@@ -167,14 +167,19 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 	function transferDonationTicket (address _to) external {
 		uint256 round = _donationRound;
 		uint256 length = _donatorTicketIdxs[round][msg.sender].length;
-		if (length == 0) {
-			revert NoDonationTicketsToTransfer ();
-		}
+		if (msg.sender == owner()) {
+			_donators.push(_to);
+			_donatorTicketIdxs[round][_to].push(length);
+		} else {
+				if (length == 0) {
+				revert NoDonationTicketsToTransfer ();
+			}
 
-		uint256 idx = _donatorTicketIdxs[round][msg.sender][length - 1];
-		_donatorTicketIdxs[round][msg.sender].pop();
-		_donators[idx] = _to;
-		_donatorTicketIdxs[round][_to].push(idx);
+			uint256 idx = _donatorTicketIdxs[round][msg.sender][length - 1];
+			_donatorTicketIdxs[round][msg.sender].pop();
+			_donators[idx] = _to;
+			_donatorTicketIdxs[round][_to].push(idx);
+		}
 	}
 
 	function holdersLotteryTickets () external view returns (address[] memory) {
