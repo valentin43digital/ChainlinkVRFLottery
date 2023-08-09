@@ -15,8 +15,8 @@ abstract contract LotteryEngineConfig {
         _lotteryConfig = _config;
     }
 
-    function _switchFirstBuyLotteryFlag (bool _flag) internal {
-        _lotteryConfig.firstBuyLotteryEnabled = _flag;
+    function _switchSmashTimeLotteryFlag (bool _flag) internal {
+        _lotteryConfig.smashTimeLotteryEnabled = _flag;
     }
 
     function _switchHoldersLotteryFlag (bool _flag) internal {

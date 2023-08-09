@@ -17,7 +17,7 @@ import {
 	Holders,
 	RuntimeCounter,
 	HoldersLotteryConfig,
-	FirstBuyLotteryConfig,
+	SmashTimeLotteryConfig,
 	DonationLotteryConfig,
 	LotteryRound,
 	LotteryType,
@@ -72,11 +72,11 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 		);
 	}
 
-	function _firstBuyLottery (
+	function _smashTimeLottery (
 		address _transferrer,
 		address _recipient,
 		uint256 _amount,
-		FirstBuyLotteryConfig memory _runtime
+		SmashTimeLotteryConfig memory _runtime
 	) internal {
 		if (_runtime.enabled) {
 			if (_transferrer != PANCAKE_PAIR) {
@@ -112,7 +112,7 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 			return;
 		}
 
-		if (_holders.array.length == 0) {
+		if (_holders.first.length == 0) {
 			return;
 		}
 
@@ -203,7 +203,7 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 	}
 
 	function holdersLotteryTickets () external view returns (address[] memory) {
-		return _holders.array;
+		return _holders.allTickets();
 	}
 
 	function donationLotteryTickets () external view returns (address[] memory) {

@@ -13,7 +13,7 @@ import {
 abstract contract ProtocolConfig {
 
 	address public holderLotteryPrizePoolAddress;
-	address public firstBuyLotteryPrizePoolAddress;
+	address public smashTimeLotteryPrizePoolAddress;
 	address public donationLotteryPrizePoolAddress;
 	address public teamFeesAccumulationAddress;
 	address public treasuryFeesAccumulationAddress;
@@ -29,7 +29,7 @@ abstract contract ProtocolConfig {
 		DistributionConfig memory _config
 	) {
 		holderLotteryPrizePoolAddress = _config.holderLotteryPrizePoolAddress;
-		firstBuyLotteryPrizePoolAddress = _config.firstBuyLotteryPrizePoolAddress;
+		smashTimeLotteryPrizePoolAddress = _config.smashTimeLotteryPrizePoolAddress;
 		donationLotteryPrizePoolAddress = _config.donationLotteryPrizePoolAddress;
 		teamFeesAccumulationAddress = _config.teamFeesAccumulationAddress;
 		treasuryFeesAccumulationAddress = _config.treasuryFeesAccumulationAddress;
@@ -42,8 +42,8 @@ abstract contract ProtocolConfig {
 		holderLotteryPrizePoolAddress = _newAddress;
 	}
 
-	function _setFirstBuyLotteryPrizePoolAddress (address _newAddress) internal {
-		firstBuyLotteryPrizePoolAddress = _newAddress;
+	function _setSmashTimeLotteryPrizePoolAddress (address _newAddress) internal {
+		smashTimeLotteryPrizePoolAddress = _newAddress;
 	}
 
 	function _setDonationLotteryPrizePoolAddress (address _newAddress) internal {

@@ -52,7 +52,7 @@ abstract contract Configuration is IConfiguration, VRFConsumerConfig,
 
 		uint256 currentFees = fee;
 
-		if (_lotteryConfig.firstBuyLotteryEnabled) {
+		if (_lotteryConfig.smashTimeLotteryEnabled) {
 			currentFees *= 2;
 		}
 		
@@ -95,10 +95,10 @@ abstract contract Configuration is IConfiguration, VRFConsumerConfig,
 		_setHolderLotteryPrizePoolAddress(_newAddress);
 	}
 
-	function setFirstBuyLotteryPrizePoolAddress (
+	function setSmashTimeLotteryPrizePoolAddress (
 		address _newAddress
 	) external onlyOwner {
-		_setFirstBuyLotteryPrizePoolAddress(_newAddress);
+		_setSmashTimeLotteryPrizePoolAddress(_newAddress);
 	}
 
 	function setDonationLotteryPrizePoolAddress (
@@ -137,8 +137,8 @@ abstract contract Configuration is IConfiguration, VRFConsumerConfig,
 		_setFeeConfig(_feeConfigRaw);
 	}
 
-	function switchFirstBuyLotteryFlag (bool flag) external onlyOwner {
-        _switchFirstBuyLotteryFlag(flag);
+	function switchSmashTimeLotteryFlag (bool flag) external onlyOwner {
+        _switchSmashTimeLotteryFlag(flag);
     }
 
     function switchHoldersLotteryFlag (bool flag) external onlyOwner {
@@ -229,8 +229,8 @@ abstract contract Configuration is IConfiguration, VRFConsumerConfig,
 		);
 	}
 
-	function firstBuyLotteryPrizeFeePercent () external view returns (uint256) {
-		return _fees.firstBuyLotteryPrizeFeePercent(
+	function smashTimeLotteryPrizeFeePercent () external view returns (uint256) {
+		return _fees.smashTimeLotteryPrizeFeePercent(
 			_calcFeePercent()
 		);
 	}
@@ -255,12 +255,12 @@ abstract contract Configuration is IConfiguration, VRFConsumerConfig,
 		return _isExcluded[account];
 	}
 
-	function firstBuyLotteryEnabled () external view returns (bool) {
-        return _lotteryConfig.firstBuyLotteryEnabled;
+	function smashTimeLotteryEnabled () external view returns (bool) {
+        return _lotteryConfig.smashTimeLotteryEnabled;
     }
 
     function holdersLotteryEnabled () external view returns (bool) {
-        return _lotteryConfig.firstBuyLotteryEnabled;
+        return _lotteryConfig.smashTimeLotteryEnabled;
     }
 
     function holdersLotteryTxTrigger () external view returns (uint64) {

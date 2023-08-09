@@ -19,7 +19,7 @@ async function main () {
 
     const ProtocolConfig = {
         holderLotteryPrizePoolAddress:  config.HODL_POOL,
-        firstBuyLotteryPrizePoolAddress:  config.JACKPOT_POOL,
+        smashTimeLotteryPrizePoolAddress:  config.JACKPOT_POOL,
         donationLotteryPrizePoolAddress:  config.DONATION_POOL,
         teamAddress: config.DEV,
         treasuryAddress: config.TREASURY,
@@ -30,13 +30,13 @@ async function main () {
         distributionFee: 1000,
         treasuryFee: 1000,
         devFee: 1500,
-        firstBuyLotteryPrizeFee: 1000,
+        smashTimeLotteryPrizeFee: 1000,
         holdersLotteryPrizeFee: 1500,
         donationLotteryPrizeFee: 1500
     }
 
     const LotteryConfig = {
-        firstBuyLotteryEnabled: true,
+        smashTimeLotteryEnabled: true,
         holdersLotteryEnabled: true,
         holdersLotteryTxTrigger: 6,
         holdersLotteryMinPercent: 1,
@@ -47,7 +47,7 @@ async function main () {
         minimalDonation: ethers.utils.parseEther("1000")
     }
 
-    const LotteryTokenFactory = await ethers.getContractFactory("LotteryToken")
+    const LotteryTokenFactory = await ethers.getContractFactory("LayerZ")
     const token = await LotteryTokenFactory.deploy(
         config.MINT_TO,
         config.VRF_COORDINATOR_ADDRESS,

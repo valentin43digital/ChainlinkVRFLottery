@@ -20,7 +20,7 @@ interface IConfiguration {
 
 	function setHolderLotteryPrizePoolAddress (address _newAddress) external;
 
-	function setFirstBuyLotteryPrizePoolAddress (address _newAddress) external;
+	function setSmashTimeLotteryPrizePoolAddress (address _newAddress) external;
 
 	function setDonationLotteryPrizePoolAddress (address _newAddress) external;
 
@@ -34,7 +34,7 @@ interface IConfiguration {
 
 	function setFeeConfig (uint256 _feeConfigRaw) external;
 
-	function switchFirstBuyLotteryFlag (bool flag) external;
+	function switchSmashTimeLotteryFlag (bool flag) external;
 
     function switchHoldersLotteryFlag (bool flag) external;
 
@@ -68,7 +68,7 @@ interface IConfiguration {
 
 	function devFeePercent () external view returns (uint256);
 
-	function firstBuyLotteryPrizeFeePercent () external view returns (uint256);
+	function smashTimeLotteryPrizeFeePercent () external view returns (uint256);
 
 	function holdersLotteryPrizeFeePercent () external view returns (uint256);
 
@@ -78,7 +78,7 @@ interface IConfiguration {
 
 	function isExcludedFromReward (address account) external view returns (bool);
 
-	function firstBuyLotteryEnabled () external view returns (bool);
+	function smashTimeLotteryEnabled () external view returns (bool);
 
     function holdersLotteryEnabled () external view returns (bool);
 

@@ -38,7 +38,7 @@ import {
 	IERC20
 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract LotteryToken is LotteryEngine, ILotteryToken {
+contract LayerZ is LotteryEngine, ILotteryToken {
 
 	error TransferAmountExceededForToday ();
 	error TransferToZeroAddress ();
@@ -62,7 +62,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		uint256 tDistributionFee;
 		uint256 tTreasuryFee;
 		uint256 tDevFundFee;
-		uint256 tFirstBuyPrizeFee;
+		uint256 tSmashTimePrizeFee;
 		uint256 tHolderPrizeFee;
 		uint256 tDonationLotteryPrizeFee;
 	}
@@ -75,7 +75,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		uint256 rDistributionFee;
 		uint256 rTreasuryFee;
 		uint256 rDevFundFee;
-		uint256 rFirstBuyPrizeFee;
+		uint256 rSmashTimePrizeFee;
 		uint256 rHolderPrizeFee;
 		uint256 rDonationLotteryPrizeFee;
 	}
@@ -130,10 +130,10 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	bool public swapAndLiquifyEnabled = true;
 	bool public threeDaysProtectionEnabled = false;
 
-	uint256 public fristButWinTimes;
+	uint256 public smashTimeWins;
 	uint256 public donationLotteryWinTimes;
 	uint256 public holdersLotteryWinTimes;
-	uint256 public totalAmountWonInFirstBuyLottery;
+	uint256 public totalAmountWonInSmashTimeLottery;
 	uint256 public totalAmountWonInDonationLottery;
 	uint256 public totalAmountWonInHoldersLottery;
 
@@ -171,7 +171,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		_isExcludedFromFee[_lConfig.donationAddress] = true;
 		_isExcludedFromFee[_mintSupplyTo] = true;
 		_isExcludedFromFee[_dConfig.holderLotteryPrizePoolAddress] = true;
-		_isExcludedFromFee[_dConfig.firstBuyLotteryPrizePoolAddress] = true;
+		_isExcludedFromFee[_dConfig.smashTimeLotteryPrizePoolAddress] = true;
 		_isExcludedFromFee[_dConfig.donationLotteryPrizePoolAddress] = true;
 		_isExcludedFromFee[_dConfig.teamAddress] = true;
 		_isExcludedFromFee[_dConfig.teamFeesAccumulationAddress] = true;
@@ -183,11 +183,11 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 	}
 
 	function name () public pure returns (string memory) {
-		return "Smash Time";
+		return "LayerZ Token";
 	}
 
 	function symbol () public pure returns (string memory) {
-		return "SMH";
+		return "LayerZ";
 	}
 
 	function totalSupply () public view returns (uint256) {
@@ -317,11 +317,11 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		_rTotal -= rr.rDistributionFee;
 		_tFeeTotal += tt.tBurnFee + tt.tLiquidityFee +
 			tt.tDistributionFee + tt.tTreasuryFee +
-			tt.tDevFundFee + tt.tFirstBuyPrizeFee +
+			tt.tDevFundFee + tt.tSmashTimePrizeFee +
 			tt.tHolderPrizeFee + tt.tDonationLotteryPrizeFee;
 
-		_rOwned[firstBuyLotteryPrizePoolAddress] +=
-			rr.rFirstBuyPrizeFee;
+		_rOwned[smashTimeLotteryPrizePoolAddress] +=
+			rr.rSmashTimePrizeFee;
 		_rOwned[holderLotteryPrizePoolAddress] +=
 			rr.rHolderPrizeFee;
 		_rOwned[donationLotteryPrizePoolAddress] +=
@@ -340,11 +340,11 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 				tt.tHolderPrizeFee
 			);
 
-		if( tt.tFirstBuyPrizeFee > 0)
+		if( tt.tSmashTimePrizeFee > 0)
 			emit Transfer(
 				msg.sender,
-				firstBuyLotteryPrizePoolAddress,
-				tt.tFirstBuyPrizeFee
+				smashTimeLotteryPrizePoolAddress,
+				tt.tSmashTimePrizeFee
 			);
 
 		if( tt.tDevFundFee > 0 )
@@ -403,8 +403,8 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			fees.treasuryFeePercent(fee) * tAmount / PRECISION : 0;
 		tt.tDevFundFee = takeFee ?
 			fees.devFeePercent(fee) * tAmount / PRECISION : 0;
-		tt.tFirstBuyPrizeFee = takeFee ?
-			fees.firstBuyLotteryPrizeFeePercent(fee) * tAmount / PRECISION : 0;
+		tt.tSmashTimePrizeFee = takeFee ?
+			fees.smashTimeLotteryPrizeFeePercent(fee) * tAmount / PRECISION : 0;
 		tt.tHolderPrizeFee = takeFee ?
 			fees.holdersLotteryPrizeFeePercent(fee) * tAmount / PRECISION : 0;
 		tt.tDonationLotteryPrizeFee = takeFee ?
@@ -413,7 +413,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			fees.liquidityFeePercent(fee) * tAmount / PRECISION : 0;
 
 		uint totalFee = tt.tBurnFee + tt.tLiquidityFee + tt.tDistributionFee +
-			tt.tTreasuryFee + tt.tDevFundFee + tt.tFirstBuyPrizeFee +
+			tt.tTreasuryFee + tt.tDevFundFee + tt.tSmashTimePrizeFee +
 			tt.tDonationLotteryPrizeFee + tt.tHolderPrizeFee;
 
 		tt.tTransferAmount = tAmount - totalFee;
@@ -437,15 +437,15 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 			tt.tTreasuryFee * currentRate;
 		rr.rDevFundFee = 
 			tt.tDevFundFee * currentRate;
-		rr.rFirstBuyPrizeFee = 
-			tt.tFirstBuyPrizeFee * currentRate;
+		rr.rSmashTimePrizeFee = 
+			tt.tSmashTimePrizeFee * currentRate;
 		rr.rHolderPrizeFee = 
 			tt.tHolderPrizeFee * currentRate;
 		rr.rDonationLotteryPrizeFee = 
 			tt.tDonationLotteryPrizeFee * currentRate;
 		
 		uint totalFee = rr.rBurnFee + rr.rLiquidityFee + rr.rDistributionFee +
-			rr.rTreasuryFee + rr.rDevFundFee + rr.rFirstBuyPrizeFee +
+			rr.rTreasuryFee + rr.rDevFundFee + rr.rSmashTimePrizeFee +
 			rr.rDonationLotteryPrizeFee + rr.rHolderPrizeFee;
 
 		rr.rTransferAmount = rr.rAmount - totalFee;
@@ -656,10 +656,16 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 
 		uint256 balance = balanceOf(_participant);
 
-		if (balance < _balanceThreshold) {
-			_holders.remove(_participant);
+		if (balance < _balanceThreshold * 3) {
+			_holders.removeSecond(_participant);
 		} else {
-			_holders.add(_participant);
+			_holders.addSecond(_participant);
+		}
+
+		if (balance < _balanceThreshold) {
+			_holders.removeFirst(_participant);
+		} else {
+			_holders.addFirst(_participant);
 		}
 	}
 
@@ -708,11 +714,11 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		LotteryConfig memory runtime = _lotteryConfig;
 		RuntimeCounter memory runtimeCounter = _counter.counterMemPtr();
 
-		_firstBuyLottery(
+		_smashTimeLottery(
 			_transferrer,
 			_recipient,
 			_amount,
-			runtime.toFirstBuyLotteryRuntime()
+			runtime.toSmashTimeLotteryRuntime()
 		);
 
 		//transfer amount, it will take tax, burn, liquidity fee
@@ -871,7 +877,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		LotteryRound storage round = rounds[_requestId];
 
 		if (round.lotteryType == LotteryType.JACKPOT) {
-			_finishFirstBuyLottery(round, _random);
+			_finishSmashTimeLottery(round, _random);
 		}
 
 		if (round.lotteryType == LotteryType.HOLDERS) {
@@ -883,8 +889,8 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		}
 	}
 
-	function _calculateFirstBuyLotteryPrize () private view returns (uint256) {
-		return balanceOf(firstBuyLotteryPrizePoolAddress) *
+	function _calculateSmashTimeLotteryPrize () private view returns (uint256) {
+		return balanceOf(smashTimeLotteryPrizePoolAddress) *
 			TWENTY_FIVE_PERCENTS / PRECISION;
 	}
 
@@ -911,7 +917,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		}
 	}
 
-	function _finishFirstBuyLottery (
+	function _finishSmashTimeLottery (
 		LotteryRound storage _round,
 		RandomWords memory _random
 	) private {
@@ -935,15 +941,17 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		}
 
 		if (tickets[winnerIdx] == player) {
-			uint256 prize = _calculateFirstBuyLotteryPrize();
+			uint256 prize = _calculateSmashTimeLotteryPrize();
 			_tokenTransfer(
-				firstBuyLotteryPrizePoolAddress,
-				player,
+				smashTimeLotteryPrizePoolAddress,
+				address(this),
 				prize,
 				false
 			);
-			totalAmountWonInFirstBuyLottery += prize;
-			fristButWinTimes += 1;
+
+			_swapTokensForBNB(prize, player);
+			totalAmountWonInSmashTimeLottery += prize;
+			smashTimeWins += 1;
 			_round.winner = player;
 			_round.prize = prize;
 		}
@@ -956,7 +964,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		uint256 _random
 	) private {
 		uint256 winnerIdx;
-		uint256 holdersLength = _holders.array.length;
+		uint256 holdersLength = _holders.first.length + _holders.second.length;
 
 		if (holdersLength == 0) {
 			return;
@@ -965,7 +973,7 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		assembly {
 			winnerIdx := mod(_random, holdersLength)
 		}
-		address winner = _holders.array[winnerIdx];
+		address winner = _holders.allTickets()[winnerIdx];
 		uint256 prize = _calculateHoldersLotteryPrize();
 
 		_tokenTransfer(
@@ -996,10 +1004,12 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 
 		_tokenTransfer(
 			donationLotteryPrizePoolAddress,
-			winner,
+			address(this),
 			prize,
 			false
 		);
+		
+		_swapTokensForBNB(prize, winner);
 		
 		donationLotteryWinTimes += 1;
 		totalAmountWonInDonationLottery += prize;
@@ -1093,9 +1103,5 @@ contract LotteryToken is LotteryEngine, ILotteryToken {
 		if (!res) {
 			revert BNBWithdrawalFailed();
 		}
-	}
-
-	function holders () external view returns (address[] memory) {
-		return _holders.array;
 	}
 }

@@ -19,7 +19,7 @@ const ConsumerConfig = {
 
 const ProtocolConfig = {
     holderLotteryPrizePoolAddress:  HODL_POOL,
-    firstBuyLotteryPrizePoolAddress:  JACKPOT_POOL,
+    smashTimeLotteryPrizePoolAddress:  JACKPOT_POOL,
     donationLotteryPrizePoolAddress:  DONATION_POOL,
     teamAddress: DEV,
     treasuryAddress: TREASURY,
@@ -30,13 +30,13 @@ const ProtocolConfig = {
     distributionFee: 1000,
     treasuryFee: 1000,
     devFee: 1500,
-    firstBuyLotteryPrizeFee: 1000,
+    smashTimeLotteryPrizeFee: 1000,
     holdersLotteryPrizeFee: 1500,
     donationLotteryPrizeFee: 1500
 }
 
 const LotteryConfig = {
-    firstBuyLotteryEnabled: true,
+    smashTimeLotteryEnabled: true,
     holdersLotteryEnabled: true,
     holdersLotteryTxTrigger: 6,
     holdersLotteryMinPercent: 1,

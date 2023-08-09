@@ -35,7 +35,7 @@ library TypesHelpers {
 		raw = (raw << 32) + _config.distributionFee;
 		raw = (raw << 32) + _config.treasuryFee;
 		raw = (raw << 32) + _config.devFee;
-		raw = (raw << 32) + _config.firstBuyLotteryPrizeFee;
+		raw = (raw << 32) + _config.smashTimeLotteryPrizeFee;
 		raw = (raw << 32) + _config.holdersLotteryPrizeFee;
 		raw = (raw << 32) + _config.donationLotteryPrizeFee;
 		return Fee.wrap(raw);
@@ -76,7 +76,7 @@ library TypesHelpers {
 		return fee * uint32(Fee.unwrap(feeConfig) >> 96) / PRECISION;
 	}
 
-	function firstBuyLotteryPrizeFeePercent (
+	function smashTimeLotteryPrizeFeePercent (
 		Fee feeConfig,
 		uint256 fee
 	) internal pure returns (uint256) {
@@ -105,11 +105,11 @@ library TypesHelpers {
 		}
 	}
 
-	function toFirstBuyLotteryRuntime (
+	function toSmashTimeLotteryRuntime (
 		LotteryConfig memory _runtime
-	) internal pure returns (FirstBuyLotteryConfig memory firstBuyRuntime) {
+	) internal pure returns (SmashTimeLotteryConfig memory smashTimeRuntime) {
 		assembly {
-			firstBuyRuntime := _runtime
+			smashTimeRuntime := _runtime
 		}
 	}
 
@@ -171,36 +171,87 @@ library TypesHelpers {
 		runtimeCounter.counter = _counter;
 	}
 
-	function add(Holders storage _holders, address _holder) internal {
-		if (!exists(_holders, _holder)) {
-			_holders.array.push(_holder);
-			_holders.idx[_holder] = _holders.array.length;
+	function allTickets (Holders storage _holders) internal view returns (address[] memory) {
+		address[] memory first = _holders.first;
+		address[] memory second = _holders.second;
+		address[] memory merged = new address[](first.length + second.length);
+		for (uint256 i = 0; i < first.length;) {
+			merged[i] = first[i];
+			unchecked {
+				++i;
+			}
+		}
+		for (uint256 i = 0; i < second.length;) {
+			merged[first.length + i] = second[i];
+			unchecked {
+				++i;
+			}
+		}
+		return merged;
+	}
+
+	function addFirst(Holders storage _holders, address _holder) internal {
+		if (!existsFirst(_holders, _holder)) {
+			_holders.first.push(_holder);
+			_holders.idx[_holder][0] = _holders.first.length;
 		}
 	}
 
-	function remove(Holders storage _holders, address _holder) internal {
+	function removeFirst(Holders storage _holders, address _holder) internal {
 
-		uint256 holderIdx = _holders.idx[_holder];
+		uint256 holderIdx = _holders.idx[_holder][0];
 		if (holderIdx == 0) {
 			return;
 		}
 
 		uint256 arrayIdx = holderIdx - 1;
-		uint256 lastIdx = _holders.array.length - 1;
+		uint256 lastIdx = _holders.first.length - 1;
 
 		if (arrayIdx != lastIdx) {
-			address lastElement = _holders.array[lastIdx];
-			_holders.array[arrayIdx] = lastElement;
-			_holders.idx[lastElement] = holderIdx;
+			address lastElement = _holders.first[lastIdx];
+			_holders.first[arrayIdx] = lastElement;
+			_holders.idx[lastElement][0] = holderIdx;
 		}
 
-		_holders.array.pop();
+		_holders.first.pop();
 
 		delete _holders.idx[_holder];
 	}
 
-	function exists(Holders storage _holders, address _holder) internal view returns (bool) {
-		return _holders.idx[_holder] != 0;
+	function existsFirst(Holders storage _holders, address _holder) internal view returns (bool) {
+		return _holders.idx[_holder][0] != 0;
+	}
+
+	function addSecond(Holders storage _holders, address _holder) internal {
+		if (!existsSecond(_holders, _holder)) {
+			_holders.second.push(_holder);
+			_holders.idx[_holder][1] = _holders.second.length;
+		}
+	}
+
+	function removeSecond(Holders storage _holders, address _holder) internal {
+
+		uint256 holderIdx = _holders.idx[_holder][1];
+		if (holderIdx == 0) {
+			return;
+		}
+
+		uint256 arrayIdx = holderIdx - 1;
+		uint256 lastIdx = _holders.second.length - 1;
+
+		if (arrayIdx != lastIdx) {
+			address lastElement = _holders.second[lastIdx];
+			_holders.second[arrayIdx] = lastElement;
+			_holders.idx[lastElement][1] = holderIdx;
+		}
+
+		_holders.second.pop();
+
+		_holders.idx[_holder][1] = 0;
+	}
+
+	function existsSecond(Holders storage _holders, address _holder) internal view returns (bool) {
+		return _holders.idx[_holder][1] != 0;
 	}
 
 	function isActive(LotteryType _lotteryType) internal pure returns (bool res) {
@@ -244,7 +295,7 @@ struct ConsumerConfig {
 
 struct DistributionConfig {
 	address holderLotteryPrizePoolAddress;
-	address firstBuyLotteryPrizePoolAddress;
+	address smashTimeLotteryPrizePoolAddress;
 	address donationLotteryPrizePoolAddress;
 	address teamAddress;
 	address treasuryAddress;
@@ -255,13 +306,13 @@ struct DistributionConfig {
 	uint32 distributionFee;
 	uint32 treasuryFee;
 	uint32 devFee;
-	uint32 firstBuyLotteryPrizeFee;
+	uint32 smashTimeLotteryPrizeFee;
 	uint32 holdersLotteryPrizeFee;
 	uint32 donationLotteryPrizeFee;
 }
 
 struct LotteryConfig {
-	bool firstBuyLotteryEnabled;
+	bool smashTimeLotteryEnabled;
 	bool holdersLotteryEnabled;
     uint64 holdersLotteryTxTrigger;
 	uint256 holdersLotteryMinPercent;
@@ -280,7 +331,7 @@ struct DonationLotteryConfig {
     uint256 minimalDonation;
 }
 
-struct FirstBuyLotteryConfig {
+struct SmashTimeLotteryConfig {
 	bool enabled;
 }
 
@@ -291,8 +342,9 @@ struct HoldersLotteryConfig {
 }
 
 struct Holders {
-	address[] array;
-	mapping (address => uint256) idx;
+	address[] first;
+	address[] second;
+	mapping (address => uint256[2]) idx;
 }
 
 enum LotteryType {

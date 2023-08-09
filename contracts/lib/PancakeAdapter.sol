@@ -22,9 +22,9 @@ import {
 abstract contract PancakeAdapter is Configuration {
 
 	address internal constant _TUSD_ADDRESS = 
-		0x591658f5B3Cb16b706e15be9747321AbB9220214;
+		0x40af3827F39D0EAcBF4A168f8D4ee67c121D11c9;
 	address internal constant _WBNB_ADDRESS = 
-		0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd;
+		0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
 	uint256 internal constant _TUSD_DECIMALS = 1e18;
 
 	IPancakeRouter02 public immutable PANCAKE_ROUTER;

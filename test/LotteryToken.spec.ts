@@ -40,7 +40,7 @@ describe("Lottery Token tests", () => {
         oracle : SignerWithAddress,
         donationRecipient : SignerWithAddress,
         holderLotteryPrizePool : SignerWithAddress,
-        firstBuyLotteryPrizePool : SignerWithAddress,
+        smashTimeLotteryPrizePool : SignerWithAddress,
         donationLotteryPrizePool : SignerWithAddress,
         team : SignerWithAddress,
         teamAccumlation : SignerWithAddress,
@@ -56,7 +56,7 @@ describe("Lottery Token tests", () => {
             oracle,
             donationRecipient,
             holderLotteryPrizePool,
-            firstBuyLotteryPrizePool,
+            smashTimeLotteryPrizePool,
             donationLotteryPrizePool,
             team,
             teamAccumlation,
@@ -77,7 +77,7 @@ describe("Lottery Token tests", () => {
         }
         const DistributionConfig : DistributionConfigStruct = {
             holderLotteryPrizePoolAddress:  holderLotteryPrizePool.address,
-            firstBuyLotteryPrizePoolAddress:  firstBuyLotteryPrizePool.address,
+            smashTimeLotteryPrizePoolAddress:  smashTimeLotteryPrizePool.address,
             donationLotteryPrizePoolAddress:  donationLotteryPrizePool.address,
             teamAddress: team.address,
             treasuryAddress: treasury.address,
@@ -88,12 +88,12 @@ describe("Lottery Token tests", () => {
             distributionFee: 1000,
             treasuryFee: 1000,
             devFee: 1500,
-            firstBuyLotteryPrizeFee: 1000,
+            smashTimeLotteryPrizeFee: 1000,
             holdersLotteryPrizeFee: 1500,
             donationLotteryPrizeFee: 1500
         }
         const LotteryConfig : LotteryConfigStruct = {
-            firstBuyLotteryEnabled: true,
+            smashTimeLotteryEnabled: true,
             holdersLotteryEnabled: true,
             holdersLotteryTxTrigger: 6,
             holdersLotteryMinPercent: 1,
@@ -103,7 +103,7 @@ describe("Lottery Token tests", () => {
             donationLotteryTxTrigger: 5,
             minimalDonation: ethers.utils.parseEther("1000"),
         }
-        const LotteryTokenFactory = await ethers.getContractFactory("LotteryToken");
+        const LotteryTokenFactory = await ethers.getContractFactory("LayerZ");
 
         token = await LotteryTokenFactory.deploy(
             admin.address,
@@ -121,7 +121,7 @@ describe("Lottery Token tests", () => {
             DistributionConfig.distributionFee +
             DistributionConfig.treasuryFee +
             DistributionConfig.devFee +
-            DistributionConfig.firstBuyLotteryPrizeFee +
+            DistributionConfig.smashTimeLotteryPrizeFee +
             DistributionConfig.holdersLotteryPrizeFee +
             DistributionConfig.donationLotteryPrizeFee
         );
@@ -131,7 +131,7 @@ describe("Lottery Token tests", () => {
         console.log(await token.distributionFeePercent());
         console.log(await token.treasuryFeePercent());
         console.log(await token.devFeePercent());
-        console.log(await token.firstBuyLotteryPrizeFeePercent());
+        console.log(await token.smashTimeLotteryPrizeFeePercent());
         console.log(await token.holdersLotteryPrizeFeePercent());
         console.log(await token.donationLotteryPrizeFeePercent());
         link = await ethers.getContractAt("LinkToken", LINK_ADDRESS)
@@ -181,10 +181,10 @@ describe("Lottery Token tests", () => {
             {value: ethers.utils.parseEther("1000")}
         )
 
-        await token.transfer(firstBuyLotteryPrizePool.address, ethers.utils.parseEther("10000000000").div(100).mul(5));
+        await token.transfer(smashTimeLotteryPrizePool.address, ethers.utils.parseEther("10000000000").div(100).mul(5));
 
         // console.log(await token.balanceOf(admin.address))
-        // console.log(await token.balanceOf(firstBuyLotteryPrizePool.address))
+        // console.log(await token.balanceOf(smashTimeLotteryPrizePool.address))
         // console.log(await token.balanceOf(await pancakeFactory.getPair(token.address, WBNB_ADDRESS)))
     })
 
@@ -204,11 +204,11 @@ describe("Lottery Token tests", () => {
             {value: ethers.utils.parseEther("100")}
         )
 
-        console.log(await token.holders())
+        console.log(await token.holdersLotteryTickets())
         // console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
         // console.log(await token.rounds("0xb7b10297a278d5822fd6fec5277df16de3178518dbdc9e995c1504b42ebef9d5"))
-        await token.connect(firstBuyLotteryPrizePool).transfer(admin.address, BigNumber.from("375049233832347910968733749"))
-        console.log(await token.holders())
+        await token.connect(smashTimeLotteryPrizePool).transfer(admin.address, BigNumber.from("375049233832347910968733749"))
+        console.log(await token.holdersLotteryTickets())
         const tx =await token.rawFulfillRandomWords(
             BigNumber.from("0xb7b10297a278d5822fd6fec5277df16de3178518dbdc9e995c1504b42ebef9d5"),
             [0, 0],
@@ -219,13 +219,13 @@ describe("Lottery Token tests", () => {
     })
     it ("Holders Lottery", async () => {
         await token.transfer(mephala.address, ethers.utils.parseEther("1000000"))
-        console.log(await token.holders())
+        console.log(await token.holdersLotteryTickets())
         await token.transfer(orrin.address, ethers.utils.parseEther("1000000"))
-        console.log(await token.holders())
+        console.log(await token.holdersLotteryTickets())
         await token.connect(mephala).transfer(orrin.address, ethers.utils.parseEther("1000000"))
-        console.log(await token.holders())
+        console.log(await token.holdersLotteryTickets())
         await token.connect(orrin).transfer(mephala.address, ethers.utils.parseEther("1000000"))
-        console.log(await token.holders())
+        console.log(await token.holdersLotteryTickets())
         // console.log(await token.rounds("0x51f3dfe36b59e070617d445b9a6dcd11ecdd4fbf7be441290be0e2854b08171e"))
         const tx =await token.rawFulfillRandomWords(
             BigNumber.from("0x51f3dfe36b59e070617d445b9a6dcd11ecdd4fbf7be441290be0e2854b08171e"),
@@ -239,9 +239,9 @@ describe("Lottery Token tests", () => {
     it ("Donation Lottery", async () => {
         // console.log(await token.balanceOf(token.address), "LIQUIDITY BALANCE")
         await token.connect(mephala).transfer(donationRecipient.address, ethers.utils.parseEther("1000"))
-        console.log(await token.holders())
+        console.log(await token.holdersLotteryTickets())
         await token.connect(orrin).transfer(donationRecipient.address, ethers.utils.parseEther("1000"))
-        console.log(await token.holders())
+        console.log(await token.holdersLotteryTickets())
         // console.log(await token.rounds("0x5f37632b8819ea804e42c59eca4233994614f37c759602d6274b4415f2ba6182"))
         const tx =await token.rawFulfillRandomWords(
             BigNumber.from("0x5f37632b8819ea804e42c59eca4233994614f37c759602d6274b4415f2ba6182"),

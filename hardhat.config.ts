@@ -46,7 +46,7 @@ const config: HardhatUserConfig = {
 		hardhat: {
             forking: {
                 url: `https://bsc-dataseed.binance.org/`,
-                blockNumber: 28318015
+                blockNumber: 30159063
             }
         },
 		bsc_testnet: {
