@@ -6,6 +6,7 @@ import "@nomiclabs/hardhat-etherscan";
 import "@typechain/hardhat";
 import 'hardhat-contract-sizer';
 import 'hardhat-gas-reporter';
+import 'hardhat-tracer';
 import "solidity-coverage";
 
 dotenv.config();
