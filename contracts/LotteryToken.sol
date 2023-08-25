@@ -87,8 +87,9 @@ contract LayerZ is LotteryEngine, ILotteryToken {
 	}
 
 	uint256 public liquiditySupplyThreshold = 1000 * 1e18;
-
 	uint256 public feeSupplyThreshold = 1000 * 1e18;
+	
+	uint256 public accruedBNBLotteryTax;
 
 	uint8 public constant decimals = 18;
 	
@@ -177,6 +178,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
 		_isExcludedFromFee[_dConfig.teamFeesAccumulationAddress] = true;
 		_isExcludedFromFee[_dConfig.treasuryAddress] = true;
 		_isExcludedFromFee[_dConfig.treasuryFeesAccumulationAddress] = true;
+		_isExcludedFromFee[_lotteryConfig.donationAddress] = true;
 		_isExcludedFromFee[DEAD_ADDRESS] = true;
 
 		_approve(address(this), address(PANCAKE_ROUTER), type(uint256).max);
@@ -941,15 +943,19 @@ contract LayerZ is LotteryEngine, ILotteryToken {
 		}
 
 		if (tickets[winnerIdx] == player) {
-			uint256 prize = _calculateSmashTimeLotteryPrize();
+			
+			uint256 untaxedPrize = _calculateSmashTimeLotteryPrize();
+			uint256 tax = untaxedPrize * smashTimeLotteryPrizeFeePercent() / maxBuyPercent;
+			accruedBNBLotteryTax += tax;
+			uint256 prize = untaxedPrize - tax;
+
 			_tokenTransfer(
 				smashTimeLotteryPrizePoolAddress,
-				address(this),
+				player,
 				prize,
 				false
 			);
-
-			_swapTokensForBNB(prize, player);
+			
 			totalAmountWonInSmashTimeLottery += prize;
 			smashTimeWins += 1;
 			_round.winner = player;
@@ -974,7 +980,11 @@ contract LayerZ is LotteryEngine, ILotteryToken {
 			winnerIdx := mod(_random, holdersLength)
 		}
 		address winner = _holders.allTickets()[winnerIdx];
-		uint256 prize = _calculateHoldersLotteryPrize();
+		
+		uint256 untaxedPrize = _calculateHoldersLotteryPrize();
+		uint256 tax = untaxedPrize * holdersLotteryPrizeFeePercent() / maxBuyPercent;
+		accruedBNBLotteryTax += tax;
+		uint256 prize = untaxedPrize - tax;
 
 		_tokenTransfer(
 			holderLotteryPrizePoolAddress,
@@ -1000,16 +1010,17 @@ contract LayerZ is LotteryEngine, ILotteryToken {
 			winnerIdx := mod(_random, donatorsLength)
 		}
 		address winner = _donators[winnerIdx];
-		uint256 prize = _calculateDonationLotteryPrize();
+
+		uint256 untaxedPrize = _calculateDonationLotteryPrize();
+		uint256 tax = untaxedPrize * donationLotteryPrizeFeePercent() / maxBuyPercent;
+		uint256 prize = untaxedPrize - tax;
 
 		_tokenTransfer(
 			donationLotteryPrizePoolAddress,
-			address(this),
+			winner,
 			prize,
 			false
 		);
-		
-		_swapTokensForBNB(prize, winner);
 		
 		donationLotteryWinTimes += 1;
 		totalAmountWonInDonationLottery += prize;
