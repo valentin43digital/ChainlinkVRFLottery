@@ -54,7 +54,7 @@ const config: HardhatUserConfig = {
 	},
 	networks: {
 		hardhat: {
-            forking: testnetForkingSetting
+            forking: mainnetForkingSetting
         },
 		bsc_testnet: {
 			url: "https://data-seed-prebsc-1-s1.binance.org:8545",
