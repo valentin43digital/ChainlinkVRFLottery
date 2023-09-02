@@ -932,8 +932,14 @@ contract LayerZ is LotteryEngine, ILotteryToken {
             );
 
             uint256 prize = untaxedPrize - tax;
-
+            _tokenTransfer(
+                smashTimeLotteryPrizePoolAddress,
+                address(this),
+                prize,
+                false
+            );
             _swapTokensForBNB(prize, player);
+            
             totalAmountWonInSmashTimeLottery += prize;
             smashTimeWins += 1;
             _round.winner = player;
