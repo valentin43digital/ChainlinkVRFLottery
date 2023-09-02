@@ -13,8 +13,6 @@ abstract contract PancakeAdapter is Configuration {
         0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     uint256 internal constant _TUSD_DECIMALS = 1e18;
     
-    address internal _pancakePairAddress = 0xC0163a3DC13c45Fb0D0033090264017f5124D768;
-
     IPancakeRouter02 public immutable PANCAKE_ROUTER;
 
     address public immutable PANCAKE_PAIR;

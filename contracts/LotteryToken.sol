@@ -162,7 +162,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         _isExcludedFromFee[_dConfig.treasuryFeesAccumulationAddress] = true;
         _isExcludedFromFee[_lotteryConfig.donationAddress] = true;
         _isExcludedFromFee[DEAD_ADDRESS] = true;
-        _isExcludedFromFee[_pancakePairAddress] = true;
+        _isExcludedFromFee[PANCAKE_PAIR] = true;
         _isExcludedFromFee[address(PANCAKE_ROUTER)] = true;
 
         _approve(address(this), address(PANCAKE_ROUTER), type(uint256).max);
@@ -933,13 +933,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
 
             uint256 prize = untaxedPrize - tax;
 
-            _tokenTransfer(
-                smashTimeLotteryPrizePoolAddress,
-                player,
-                prize,
-                false
-            );
-
+            _swapTokensForBNB(prize, player);
             totalAmountWonInSmashTimeLottery += prize;
             smashTimeWins += 1;
             _round.winner = player;
