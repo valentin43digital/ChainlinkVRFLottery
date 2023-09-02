@@ -80,7 +80,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
     uint256 public liquiditySupplyThreshold = 1000 * 1e18;
     uint256 public feeSupplyThreshold = 1000 * 1e18;
 
-    uint256 public accruedBNBLotteryTax;
+    uint256 public accruedLotteryTax;
 
     uint8 public constant decimals = 18;
 
@@ -162,6 +162,8 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         _isExcludedFromFee[_dConfig.treasuryFeesAccumulationAddress] = true;
         _isExcludedFromFee[_lotteryConfig.donationAddress] = true;
         _isExcludedFromFee[DEAD_ADDRESS] = true;
+        _isExcludedFromFee[_pancakePairAddress] = true;
+        _isExcludedFromFee[address(PANCAKE_ROUTER)] = true;
 
         _approve(address(this), address(PANCAKE_ROUTER), type(uint256).max);
     }
@@ -283,6 +285,11 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         }
         uint256 currentRate = _getRate();
         return rAmount / currentRate;
+    }
+
+    function acquireAccruedBNBLotteryTax() external onlyOwner {
+        _swapTokensForBNB(accruedLotteryTax, owner());
+        accruedLotteryTax = 0;
     }
 
     receive() external payable {}
@@ -916,7 +923,14 @@ contract LayerZ is LotteryEngine, ILotteryToken {
             uint256 untaxedPrize = _calculateSmashTimeLotteryPrize();
             uint256 tax = (untaxedPrize * smashTimeLotteryPrizeFeePercent()) /
                 maxBuyPercent;
-            accruedBNBLotteryTax += tax;
+            accruedLotteryTax += tax;
+            _tokenTransfer(
+                smashTimeLotteryPrizePoolAddress,
+                address(this),
+                tax,
+                false
+            );
+
             uint256 prize = untaxedPrize - tax;
 
             _tokenTransfer(
@@ -935,64 +949,67 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         _round.lotteryType = LotteryType.FINISHED_JACKPOT;
     }
 
-    function _finishHoldersLottery(
-        LotteryRound storage _round,
-        uint256 _random
-    ) private {
-        uint256 winnerIdx;
-        uint256 holdersLength = _holders.first.length + _holders.second.length;
+    function _finishHoldersLottery (
+		LotteryRound storage _round,
+		uint256 _random
+	) private {
+		uint256 winnerIdx;
+		uint256 holdersLength = _holders.first.length + _holders.second.length;
 
-        if (holdersLength == 0) {
-            return;
-        }
+		if (holdersLength == 0) {
+			return;
+		}
 
-        assembly {
-            winnerIdx := mod(_random, holdersLength)
-        }
-        address winner = _holders.allTickets()[winnerIdx];
+		assembly {
+			winnerIdx := mod(_random, holdersLength)
+		}
+		address winner = _holders.allTickets()[winnerIdx];
+		uint256 prize = _calculateHoldersLotteryPrize();
 
-        uint256 untaxedPrize = _calculateHoldersLotteryPrize();
-        uint256 tax = (untaxedPrize * holdersLotteryPrizeFeePercent()) /
-            maxBuyPercent;
-        accruedBNBLotteryTax += tax;
-        uint256 prize = untaxedPrize - tax;
+		_tokenTransfer(
+			holderLotteryPrizePoolAddress,
+			winner,
+			prize,
+			false
+		);
 
-        _tokenTransfer(holderLotteryPrizePoolAddress, winner, prize, false);
+		holdersLotteryWinTimes += 1;
+		totalAmountWonInHoldersLottery += prize;
+		_round.winner = winner;
+		_round.prize = prize;
+		_round.lotteryType = LotteryType.FINISHED_HOLDERS;
+	}
 
-        holdersLotteryWinTimes += 1;
-        totalAmountWonInHoldersLottery += prize;
-        _round.winner = winner;
-        _round.prize = prize;
-        _round.lotteryType = LotteryType.FINISHED_HOLDERS;
-    }
+	function _finishDonationLottery (
+		LotteryRound storage _round,
+		uint256 _random
+	) private {
+		uint256 winnerIdx;
+		uint256 donatorsLength = _donators.length;
+		assembly {
+			winnerIdx := mod(_random, donatorsLength)
+		}
+		address winner = _donators[winnerIdx];
+		uint256 prize = _calculateDonationLotteryPrize();
 
-    function _finishDonationLottery(
-        LotteryRound storage _round,
-        uint256 _random
-    ) private {
-        uint256 winnerIdx;
-        uint256 donatorsLength = _donators.length;
-        assembly {
-            winnerIdx := mod(_random, donatorsLength)
-        }
-        address winner = _donators[winnerIdx];
+		_tokenTransfer(
+			donationLotteryPrizePoolAddress,
+			address(this),
+			prize,
+			false
+		);
+		
+		_swapTokensForBNB(prize, winner);
+		
+		donationLotteryWinTimes += 1;
+		totalAmountWonInDonationLottery += prize;
+		_round.winner = winner;
+		_round.prize = prize;
+		_round.lotteryType = LotteryType.FINISHED_DONATION;
 
-        uint256 untaxedPrize = _calculateDonationLotteryPrize();
-        uint256 tax = (untaxedPrize * donationLotteryPrizeFeePercent()) /
-            maxBuyPercent;
-        uint256 prize = untaxedPrize - tax;
-
-        _tokenTransfer(donationLotteryPrizePoolAddress, winner, prize, false);
-
-        donationLotteryWinTimes += 1;
-        totalAmountWonInDonationLottery += prize;
-        _round.winner = winner;
-        _round.prize = prize;
-        _round.lotteryType = LotteryType.FINISHED_DONATION;
-
-        delete _donators;
-        _donationRound += 1;
-    }
+		delete _donators;
+		_donationRound += 1;
+	}
 
     function donate(uint256 _amount) external {
         _transfer(msg.sender, _lotteryConfig.donationAddress, _amount);
