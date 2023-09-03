@@ -27,7 +27,7 @@ if (!process.env.ETHERSCAN_API_KEY) {
 
 let mainnetForkingSetting = {
 	url: `https://bsc-dataseed.binance.org/`,
-	blockNumber: 30159063
+	blockNumber: 30159063 // 31429847
 };
 
 let testnetForkingSetting = {
