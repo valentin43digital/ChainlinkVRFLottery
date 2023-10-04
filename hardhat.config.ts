@@ -6,16 +6,17 @@ import "@nomiclabs/hardhat-etherscan";
 import "@typechain/hardhat";
 import 'hardhat-contract-sizer';
 import 'hardhat-gas-reporter';
+import 'hardhat-tracer';
 import "solidity-coverage";
 
 dotenv.config();
 
 // Ensure everything is in place
-let DEPLOYER_PRIVATE_KEY: string;
-if (!process.env.DEPLOYER_PRIVATE_KEY) {
-  	throw new Error('Please set your DEPLOYER_PRIVATE_KEY in the .env file')
+let DEPLOYER_MNEMONIC: string;
+if (!process.env.DEPLOYER_MNEMONIC) {
+  	throw new Error('Please set your DEPLOYER_MNEMONIC in the .env file')
 } else {
-  	DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY;
+  	DEPLOYER_MNEMONIC = process.env.DEPLOYER_MNEMONIC;
 }
 let ETHERSCAN_API_KEY: string;
 if (!process.env.ETHERSCAN_API_KEY) {
@@ -23,6 +24,15 @@ if (!process.env.ETHERSCAN_API_KEY) {
 } else {
 	ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 }
+
+let mainnetForkingSetting = {
+	url: `https://bsc-dataseed.binance.org/`,
+	blockNumber: 30159063 // 31429847
+};
+
+let testnetForkingSetting = {
+	url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+};
 
 const config: HardhatUserConfig = {
   	solidity: {
@@ -44,22 +54,19 @@ const config: HardhatUserConfig = {
 	},
 	networks: {
 		hardhat: {
-            forking: {
-                url: `https://bsc-dataseed.binance.org/`,
-                blockNumber: 30159063
-            }
+            forking: mainnetForkingSetting
         },
 		bsc_testnet: {
 			url: "https://data-seed-prebsc-1-s1.binance.org:8545",
 			chainId: 97,
 			gasPrice: "auto",
-			accounts: [ `0x${DEPLOYER_PRIVATE_KEY}` ]
+			accounts: { mnemonic: DEPLOYER_MNEMONIC }
 		},
 		bsc_mainnet: {
 			url: "https://bsc-dataseed.binance.org/",
 			chainId: 56,
 			gasPrice: "auto",
-			accounts: [ `0x${DEPLOYER_PRIVATE_KEY}` ]
+			accounts: { mnemonic: DEPLOYER_MNEMONIC }
 		}
 	},
 	etherscan: {

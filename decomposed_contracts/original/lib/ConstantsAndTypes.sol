@@ -17,16 +17,16 @@ function addition(Counter a, Counter b) pure returns(Counter) {
 	return Counter.wrap(Counter.unwrap(a) + Counter.unwrap(b));
 }
 
-function toRandomWords(
-		uint256[] memory _array
-	) pure returns (RandomWords memory _words) {
-		assembly {
-			_words := add(_array, ONE_WORD)
-		}
+function toRandomWords(uint256[] memory _array) 
+	pure 
+	returns (RandomWords memory _words)
+{
+	assembly {
+		_words := add(_array, ONE_WORD)
 	}
+}
 
 library TypesHelpers {
-
 	function compact(
 		DistributionConfig memory _config
 	) internal pure returns (Fee) {
@@ -41,63 +41,63 @@ library TypesHelpers {
 		return Fee.wrap(raw);
 	}
 
-    function burnFeePercent (
+    function burnFeePercent(
 		Fee feeConfig,
 		uint256 fee
 	) internal pure returns (uint256) {
 		return fee * uint32(Fee.unwrap(feeConfig) >> 224) / PRECISION;
 	}
 
-	function liquidityFeePercent (
+	function liquidityFeePercent(
 		Fee feeConfig,
 		uint256 fee
 	) internal pure returns (uint256) {
 		return fee * uint32(Fee.unwrap(feeConfig) >> 192) / PRECISION;
 	}
 
-	function distributionFeePercent (
+	function distributionFeePercent(
 		Fee feeConfig,
 		uint256 fee
 	) internal pure returns (uint256) {
 		return fee * uint32(Fee.unwrap(feeConfig) >> 160) / PRECISION;
 	}
 
-	function treasuryFeePercent (
+	function treasuryFeePercent(
 		Fee feeConfig,
 		uint256 fee
 	) internal pure returns (uint256) {
 		return fee * uint32(Fee.unwrap(feeConfig) >> 128) / PRECISION;
 	}
 
-	function devFeePercent (
+	function devFeePercent(
 		Fee feeConfig,
 		uint256 fee
 	) internal pure returns (uint256) {
 		return fee * uint32(Fee.unwrap(feeConfig) >> 96) / PRECISION;
 	}
 
-	function smashTimeLotteryPrizeFeePercent (
+	function smashTimeLotteryPrizeFeePercent(
 		Fee feeConfig,
 		uint256 fee
 	) internal pure returns (uint256) {
 		return fee * uint32(Fee.unwrap(feeConfig) >> 64) / PRECISION;
 	}
 
-	function holdersLotteryPrizeFeePercent (
+	function holdersLotteryPrizeFeePercent(
 		Fee feeConfig,
 		uint256 fee
 	) internal pure returns (uint256) {
 		return fee * uint32(Fee.unwrap(feeConfig) >> 32) / PRECISION;
 	}
 
-	function donationLotteryPrizeFeePercent (
+	function donationLotteryPrizeFeePercent(
 		Fee feeConfig,
 		uint256 fee
 	) internal pure returns (uint256) {
 		return fee * uint32(Fee.unwrap(feeConfig)) / PRECISION;
 	}
 
-	function toDonationLotteryRuntime (
+	function toDonationLotteryRuntime(
 		LotteryConfig memory _runtime
 	) internal pure returns (DonationLotteryConfig memory donationRuntime) {
 		assembly {
@@ -105,7 +105,7 @@ library TypesHelpers {
 		}
 	}
 
-	function toSmashTimeLotteryRuntime (
+	function toSmashTimeLotteryRuntime(
 		LotteryConfig memory _runtime
 	) internal pure returns (SmashTimeLotteryConfig memory smashTimeRuntime) {
 		assembly {
@@ -113,7 +113,7 @@ library TypesHelpers {
 		}
 	}
 
-	function toHoldersLotteryRuntime (
+	function toHoldersLotteryRuntime(
 		LotteryConfig memory _runtime
 	) internal pure returns (HoldersLotteryConfig memory holdersRuntime) {
 		assembly {
@@ -121,42 +121,46 @@ library TypesHelpers {
 		}
 	}
 
-	function store (RuntimeCounter memory _counter) internal pure returns (Counter counter) {
+	function store(RuntimeCounter memory _counter) 
+		internal 
+		pure 
+		returns (Counter counter)
+	{
 		return _counter.counter;
 	}
 
-	function increaseDonationLotteryCounter (
+	function increaseDonationLotteryCounter(
 		RuntimeCounter memory _counter
 	) internal pure {
 		_counter.counter = _counter.counter + INCREMENT_DONATION_COUNTER;
 	}
 
-	function increaseHoldersLotteryCounter (
+	function increaseHoldersLotteryCounter(
 		RuntimeCounter memory _counter
 	) internal pure {
 		_counter.counter = _counter.counter + INCREMENT_HOLDER_COUNTER;
 	}
 
-	function donationLotteryTxCounter (
+	function donationLotteryTxCounter(
 		RuntimeCounter memory _counter
 	) internal pure returns (uint256) {
 		return Counter.unwrap(_counter.counter) >> 128;
 	}
 
-	function holdersLotteryTxCounter (
+	function holdersLotteryTxCounter(
 		RuntimeCounter memory _counter
 	) internal pure returns (uint256) {
 		return uint256(uint128(Counter.unwrap(_counter.counter)));
 	}
 
-	function resetDonationLotteryCounter (
+	function resetDonationLotteryCounter(
 		RuntimeCounter memory _counter
 	) internal pure {
 		uint256 raw = Counter.unwrap(_counter.counter);
 		_counter.counter = Counter.wrap(uint256(uint128(raw)));
 	}
 
-	function resetHoldersLotteryCounter (
+	function resetHoldersLotteryCounter(
 		RuntimeCounter memory _counter
 	) internal pure {
 		uint256 raw = Counter.unwrap(_counter.counter) >> 128;
@@ -165,13 +169,17 @@ library TypesHelpers {
 	}
 
 
-	function counterMemPtr (
+	function counterMemPtr(
 		Counter _counter
 	) internal pure returns (RuntimeCounter memory runtimeCounter) {
 		runtimeCounter.counter = _counter;
 	}
 
-	function allTickets (Holders storage _holders) internal view returns (address[] memory) {
+	function allTickets(Holders storage _holders) 
+		internal 
+		view 
+		returns (address[] memory)
+	{
 		address[] memory first = _holders.first;
 		address[] memory second = _holders.second;
 		address[] memory merged = new address[](first.length + second.length);
@@ -218,7 +226,11 @@ library TypesHelpers {
 		delete _holders.idx[_holder];
 	}
 
-	function existsFirst(Holders storage _holders, address _holder) internal view returns (bool) {
+	function existsFirst(Holders storage _holders, address _holder) 
+		internal 
+		view 
+		returns (bool)
+	{
 		return _holders.idx[_holder][0] != 0;
 	}
 
@@ -230,7 +242,6 @@ library TypesHelpers {
 	}
 
 	function removeSecond(Holders storage _holders, address _holder) internal {
-
 		uint256 holderIdx = _holders.idx[_holder][1];
 		if (holderIdx == 0) {
 			return;
@@ -250,7 +261,11 @@ library TypesHelpers {
 		_holders.idx[_holder][1] = 0;
 	}
 
-	function existsSecond(Holders storage _holders, address _holder) internal view returns (bool) {
+	function existsSecond(Holders storage _holders, address _holder) 
+		internal 
+		view 
+		returns (bool)
+	{
 		return _holders.idx[_holder][1] != 0;
 	}
 
