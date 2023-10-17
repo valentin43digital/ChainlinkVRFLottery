@@ -24,6 +24,11 @@ abstract contract BaseFacet {
         _;
     }
 
+    modifier ownerOnly {
+        RolesManagementLib.enforceSenderRole(RolesManagementLib.OWNER_ROLE);
+        _;
+    }
+
     modifier internalOnly {
         RolesManagementLib.enforceSenderRole(RolesManagementLib.INTERNAL_ROLE);
         _;
