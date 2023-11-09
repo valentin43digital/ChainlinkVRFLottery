@@ -56,31 +56,34 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
         uint256 _amount,
         SmashTimeLotteryConfig memory _runtime
     ) internal {
-        if (_runtime.enabled) {
-            if (_transferrer != PANCAKE_PAIR) {
-                return;
-            }
-
-            if (_isExcluded[_recipient]) {
-                return;
-            }
-
-            if (_isExcludedFromFee[_recipient]) {
-                return;
-            }
-
-            uint256 usdAmount = _TokenPriceInUSD(_amount) / _TUSD_DECIMALS;
-            uint256 hundreds = usdAmount / 100;
-            if (hundreds == 0) {
-                return;
-            }
-            uint256 requestId = _requestRandomWords(2);
-            rounds[requestId].lotteryType = LotteryType.JACKPOT;
-            rounds[requestId].jackpotEntry = hundreds >= 10
-                ? JackpotEntry.USD_1000
-                : JackpotEntry(uint8(hundreds));
-            rounds[requestId].jackpotPlayer = _recipient;
+        if (!_runtime.enabled) {
+            return;
         }
+        if (_transferrer != PANCAKE_PAIR) {
+            return;
+        }
+
+        if (_isExcluded[_recipient]) {
+            return;
+        }
+
+        if (_isExcludedFromFee[_recipient]) {
+            return;
+        }
+
+        uint256 usdAmount = _TokenPriceInUSD(_amount) / _TUSD_DECIMALS;
+        uint256 hundreds = usdAmount / 100;
+        if (hundreds == 0) {
+            return;
+        }
+
+        uint256 requestId = _requestRandomWords(2);
+        LotteryRound storage round = rounds[requestId];
+        round.lotteryType = LotteryType.JACKPOT;
+        round.jackpotEntry = hundreds >= 10
+            ? JackpotEntry.USD_1000
+            : JackpotEntry(uint8(hundreds));
+        round.jackpotPlayer = _recipient;
     }
 
     function _triggerHoldersLottery(
@@ -170,22 +173,21 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
         address[] calldata _recipients,
         uint256[] calldata _amounts
     ) external onlyOwner {
-        if (_recipients.length != _amounts.length) {
+        uint256 recipientsLength = _recipients.length;
+        if (recipientsLength != _amounts.length) {
             revert RecipientsLengthNotEqualToAmounts();
         }
+
         uint256 round = _donationRound;
-        for (uint256 i; i < _recipients.length; ) {
-            uint256 idx = _donatorTicketIdxs[round][_recipients[i]].length;
-            for (uint256 j; j < _amounts[i]; ) {
-                _donators.push(_recipients[i]);
-                _donatorTicketIdxs[round][_recipients[i]].push(idx);
-                unchecked {
-                    ++j;
-                    ++idx;
-                }
-            }
-            unchecked {
-                ++i;
+        for (uint256 i = 0; i < recipientsLength; ++i) {
+            address recipient = _recipients[i];
+            uint256 amount = _amounts[i];
+            uint256 idx = _donatorTicketIdxs[round][recipient].length;
+            uint256 newIdx = idx + amount;
+
+            for (; idx < newIdx; ++idx) {
+                _donators.push(recipient);
+                _donatorTicketIdxs[round][recipient].push(idx);
             }
         }
     }

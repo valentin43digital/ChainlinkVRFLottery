@@ -288,9 +288,9 @@ library TypesHelpers {
     function resetHoldersLotteryCounter(
         RuntimeCounter memory _counter
     ) internal pure {
-        uint256 raw = Counter.unwrap(_counter.counter) >> 128;
-        raw <<= 128;
-        _counter.counter = Counter.wrap(raw);
+        _counter.counter = Counter.wrap(
+            Counter.unwrap(_counter.counter) & ~uint128(0)
+        );
     }
 
     function counterMemPtr(
@@ -302,20 +302,13 @@ library TypesHelpers {
     function allTickets(
         Holders storage _holders
     ) internal view returns (address[] memory) {
-        address[] memory first = _holders.first;
-        address[] memory second = _holders.second;
-        address[] memory merged = new address[](first.length + second.length);
-        for (uint256 i = 0; i < first.length; ) {
-            merged[i] = first[i];
-            unchecked {
-                ++i;
-            }
-        }
-        for (uint256 i = 0; i < second.length; ) {
-            merged[first.length + i] = second[i];
-            unchecked {
-                ++i;
-            }
+        address[] memory merged = new address[](
+            _holders.first.length + _holders.second.length
+        );
+        for (uint256 i = 0; i < merged.length; ++i) {
+            merged[i] = i < _holders.first.length
+                ? _holders.first[i]
+                : _holders.second[i - _holders.first.length];
         }
         return merged;
     }
@@ -328,22 +321,26 @@ library TypesHelpers {
     }
 
     function removeFirst(Holders storage _holders, address _holder) internal {
-        uint256 holderIdx = _holders.idx[_holder][0];
-        if (holderIdx == 0) {
+        // If the first index of _holder is 0 or the array is empty, no operation is needed
+        if (_holders.idx[_holder].length == 0) {
+            return;
+        }
+        if (_holders.first.length == 0) {
             return;
         }
 
+        uint256 holderIdx = _holders.idx[_holder][0];
         uint256 arrayIdx = holderIdx - 1;
-        uint256 lastIdx = _holders.first.length - 1;
+        address[] storage firstArray = _holders.first; // Local storage reference
+        uint256 lastIdx = firstArray.length - 1;
 
         if (arrayIdx != lastIdx) {
-            address lastElement = _holders.first[lastIdx];
-            _holders.first[arrayIdx] = lastElement;
+            address lastElement = firstArray[lastIdx];
+            firstArray[arrayIdx] = lastElement;
             _holders.idx[lastElement][0] = holderIdx;
         }
 
-        _holders.first.pop();
-
+        firstArray.pop();
         delete _holders.idx[_holder];
     }
 
@@ -362,23 +359,27 @@ library TypesHelpers {
     }
 
     function removeSecond(Holders storage _holders, address _holder) internal {
-        uint256 holderIdx = _holders.idx[_holder][1];
-        if (holderIdx == 0) {
+        // If the second index of _holder is 0 or the array is empty, no operation is needed
+        if (_holders.idx[_holder].length < 2) {
+            return;
+        }
+        if (_holders.second.length == 0) {
             return;
         }
 
+        uint256 holderIdx = _holders.idx[_holder][1];
         uint256 arrayIdx = holderIdx - 1;
-        uint256 lastIdx = _holders.second.length - 1;
+        address[] storage secondArray = _holders.second; // Local storage reference
+        uint256 lastIdx = secondArray.length - 1;
 
         if (arrayIdx != lastIdx) {
-            address lastElement = _holders.second[lastIdx];
-            _holders.second[arrayIdx] = lastElement;
+            address lastElement = secondArray[lastIdx];
+            secondArray[arrayIdx] = lastElement;
             _holders.idx[lastElement][1] = holderIdx;
         }
 
-        _holders.second.pop();
-
-        _holders.idx[_holder][1] = 0;
+        secondArray.pop();
+        _holders.idx[_holder][1] = 0; // Reset the index to indicate removal
     }
 
     function existsSecond(
