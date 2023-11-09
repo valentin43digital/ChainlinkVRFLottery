@@ -144,15 +144,15 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         _approve(address(this), address(PANCAKE_ROUTER), type(uint256).max);
     }
 
-    function name() public pure returns (string memory) {
+    function name() external pure returns (string memory) {
         return "LayerZ Token";
     }
 
-    function symbol() public pure returns (string memory) {
+    function symbol() external pure returns (string memory) {
         return "LayerZ";
     }
 
-    function totalSupply() public view returns (uint256) {
+    function totalSupply() external view returns (uint256) {
         return _tTotal;
     }
 
@@ -194,17 +194,20 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         address sender,
         address recipient,
         uint256 amount
-    ) public returns (bool) {
-        if (_allowances[sender][msg.sender] < amount) {
+    ) external returns (bool) {
+        uint256 currentAllowance = _allowances[sender][msg.sender];
+        if (currentAllowance < amount) {
             revert TransferAmountExceedsAllowance();
         }
 
         _transfer(sender, recipient, amount);
-        if (_allowances[sender][msg.sender] != MAX_UINT256) {
+
+        if (currentAllowance != MAX_UINT256) {
             unchecked {
-                _allowances[sender][msg.sender] -= amount;
+                _allowances[sender][msg.sender] = currentAllowance - amount;
             }
         }
+
         return true;
     }
 
@@ -220,18 +223,23 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         address spender,
         uint256 subtractedValue
     ) external virtual returns (bool) {
-        if (_allowances[msg.sender][spender] < subtractedValue) {
+        uint256 currentAllowance = _allowances[msg.sender][spender];
+        if (currentAllowance < subtractedValue) {
             revert CanNotDecreaseAllowance();
         }
-        _allowances[msg.sender][spender] -= subtractedValue;
+        unchecked {
+            _allowances[msg.sender][spender] =
+                currentAllowance -
+                subtractedValue;
+        }
         return true;
     }
 
-    function totalFees() public view returns (uint256) {
+    function totalFees() external view returns (uint256) {
         return _tFeeTotal;
     }
 
-    function deliver(uint256 tAmount) public {
+    function deliver(uint256 tAmount) external {
         if (_isExcluded[msg.sender]) {
             revert ExcludedAccountCanNotCall();
         }
@@ -244,7 +252,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
     function reflectionFromToken(
         uint256 tAmount,
         bool deductTransferFee
-    ) public view returns (uint256) {
+    ) external view returns (uint256) {
         if (tAmount > _tTotal) {
             return 0;
         }
@@ -259,8 +267,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         if (rAmount > _rTotal) {
             revert AmountIsGreaterThanTotalReflections();
         }
-        uint256 currentRate = _getRate();
-        return rAmount / currentRate;
+        return rAmount / _getRate();
     }
 
     function acquireAccruedBNBLotteryTax() external onlyOwner {
@@ -289,50 +296,43 @@ contract LayerZ is LotteryEngine, ILotteryToken {
             tt.tHolderPrizeFee +
             tt.tDonationLotteryPrizeFee;
 
+        _reflectFeeToAddresses(rr);
+        _emitTransferEvents(tt);
+    }
+
+    function _reflectFeeToAddresses(RInfo memory rr) private {
         _rOwned[smashTimeLotteryPrizePoolAddress] += rr.rSmashTimePrizeFee;
         _rOwned[holderLotteryPrizePoolAddress] += rr.rHolderPrizeFee;
         _rOwned[donationLotteryPrizePoolAddress] += rr.rDonationLotteryPrizeFee;
         _rOwned[teamFeesAccumulationAddress] += rr.rDevFundFee;
         _rOwned[treasuryFeesAccumulationAddress] += rr.rTreasuryFee;
         _rOwned[DEAD_ADDRESS] += rr.rBurnFee;
+    }
 
-        if (tt.tHolderPrizeFee > 0)
-            emit Transfer(
-                msg.sender,
-                holderLotteryPrizePoolAddress,
-                tt.tHolderPrizeFee
-            );
+    function _emitTransferEvents(TInfo memory tt) private {
+        address[6] memory addresses = [
+            holderLotteryPrizePoolAddress,
+            smashTimeLotteryPrizePoolAddress,
+            teamFeesAccumulationAddress,
+            treasuryFeesAccumulationAddress,
+            donationLotteryPrizePoolAddress,
+            DEAD_ADDRESS
+        ];
 
-        if (tt.tSmashTimePrizeFee > 0)
-            emit Transfer(
-                msg.sender,
-                smashTimeLotteryPrizePoolAddress,
-                tt.tSmashTimePrizeFee
-            );
+        uint256[6] memory fees = [
+            tt.tHolderPrizeFee,
+            tt.tSmashTimePrizeFee,
+            tt.tDevFundFee,
+            tt.tTreasuryFee,
+            tt.tDonationLotteryPrizeFee,
+            tt.tBurnFee
+        ];
 
-        if (tt.tDevFundFee > 0)
-            emit Transfer(
-                msg.sender,
-                teamFeesAccumulationAddress,
-                tt.tDevFundFee
-            );
-
-        if (tt.tTreasuryFee > 0)
-            emit Transfer(
-                msg.sender,
-                treasuryFeesAccumulationAddress,
-                tt.tTreasuryFee
-            );
-
-        if (tt.tDonationLotteryPrizeFee > 0)
-            emit Transfer(
-                msg.sender,
-                donationLotteryPrizePoolAddress,
-                tt.tDonationLotteryPrizeFee
-            );
-
-        if (tt.tBurnFee > 0)
-            emit Transfer(msg.sender, DEAD_ADDRESS, tt.tBurnFee);
+        for (uint i = 0; i < addresses.length; i++) {
+            if (fees[i] > 0) {
+                emit Transfer(msg.sender, addresses[i], fees[i]);
+            }
+        }
     }
 
     function _getValues(
@@ -348,32 +348,41 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         uint256 tAmount,
         bool takeFee
     ) private view returns (TInfo memory tt) {
+        if (!takeFee) {
+            tt.tTransferAmount = tAmount;
+            tt.tBurnFee = 0;
+            tt.tDistributionFee = 0;
+            tt.tTreasuryFee = 0;
+            tt.tDevFundFee = 0;
+            tt.tSmashTimePrizeFee = 0;
+            tt.tHolderPrizeFee = 0;
+            tt.tDonationLotteryPrizeFee = 0;
+            tt.tLiquidityFee = 0;
+            return tt;
+        }
+
         uint256 fee = _calcFeePercent();
         Fee fees = _fees;
-        tt.tBurnFee = takeFee
-            ? (fees.burnFeePercent(fee) * tAmount) / PRECISION
-            : 0;
-        tt.tDistributionFee = takeFee
-            ? (fees.distributionFeePercent(fee) * tAmount) / PRECISION
-            : 0;
-        tt.tTreasuryFee = takeFee
-            ? (fees.treasuryFeePercent(fee) * tAmount) / PRECISION
-            : 0;
-        tt.tDevFundFee = takeFee
-            ? (fees.devFeePercent(fee) * tAmount) / PRECISION
-            : 0;
-        tt.tSmashTimePrizeFee = takeFee
-            ? (fees.smashTimeLotteryPrizeFeePercent(fee) * tAmount) / PRECISION
-            : 0;
-        tt.tHolderPrizeFee = takeFee
-            ? (fees.holdersLotteryPrizeFeePercent(fee) * tAmount) / PRECISION
-            : 0;
-        tt.tDonationLotteryPrizeFee = takeFee
-            ? (fees.donationLotteryPrizeFeePercent(fee) * tAmount) / PRECISION
-            : 0;
-        tt.tLiquidityFee = takeFee
-            ? (fees.liquidityFeePercent(fee) * tAmount) / PRECISION
-            : 0;
+
+        // Combined calculation for efficiency
+        tt.tBurnFee = (fees.burnFeePercent(fee) * tAmount) / PRECISION;
+        tt.tDistributionFee =
+            (fees.distributionFeePercent(fee) * tAmount) /
+            PRECISION;
+        tt.tTreasuryFee = (fees.treasuryFeePercent(fee) * tAmount) / PRECISION;
+        tt.tDevFundFee = (fees.devFeePercent(fee) * tAmount) / PRECISION;
+        tt.tSmashTimePrizeFee =
+            (fees.smashTimeLotteryPrizeFeePercent(fee) * tAmount) /
+            PRECISION;
+        tt.tHolderPrizeFee =
+            (fees.holdersLotteryPrizeFeePercent(fee) * tAmount) /
+            PRECISION;
+        tt.tDonationLotteryPrizeFee =
+            (fees.donationLotteryPrizeFeePercent(fee) * tAmount) /
+            PRECISION;
+        tt.tLiquidityFee =
+            (fees.liquidityFeePercent(fee) * tAmount) /
+            PRECISION;
 
         uint totalFee = tt.tBurnFee +
             tt.tLiquidityFee +
@@ -425,10 +434,10 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         uint256 rSupply = _rTotal;
         uint256 tSupply = _tTotal;
         for (uint256 i = 0; i < _excluded.length; i++) {
-            if (
-                _rOwned[_excluded[i]] > rSupply ||
-                _tOwned[_excluded[i]] > tSupply
-            ) {
+            if (_rOwned[_excluded[i]] > rSupply) {
+                return (_rTotal, _tTotal);
+            }
+            if (_tOwned[_excluded[i]] > tSupply) {
                 return (_rTotal, _tTotal);
             }
             rSupply = rSupply - _rOwned[_excluded[i]];
@@ -452,42 +461,42 @@ contract LayerZ is LotteryEngine, ILotteryToken {
     }
 
     function _antiAbuse(address from, address to, uint256 amount) private view {
-        if (from == owner() || to == owner())
-            //  if owner we just return or we can't add liquidity
+        if (from == owner()) {
+            // If owner, skip checks
             return;
-
-        uint256 allowedAmount;
+        }
+        if (to == owner()) {
+            // If owner, skip checks
+            return;
+        }
 
         (, uint256 tSupply) = _getCurrentSupply();
         uint256 lastUserBalance = balanceOf(to) +
             ((amount * (PRECISION - _calcFeePercent())) / PRECISION);
 
-        // bot \ whales prevention
+        // Bot / whales prevention
         if (threeDaysProtectionEnabled) {
-            if (block.timestamp <= (_creationTime + 1 days)) {
-                allowedAmount = (tSupply * DAY_ONE_LIMIT) / PRECISION;
+            uint256 timeSinceCreation = block.timestamp - _creationTime;
+            uint256 dayLimit = 0;
 
-                if (lastUserBalance >= allowedAmount) {
-                    revert TransferAmountExceededForToday();
-                }
+            if (timeSinceCreation <= 1 days) {
+                dayLimit = DAY_ONE_LIMIT;
+            }
+            if (timeSinceCreation <= 2 days) {
+                dayLimit = DAY_TWO_LIMIT;
+            }
+            if (timeSinceCreation <= 3 days) {
+                dayLimit = DAY_THREE_LIMIT;
             }
 
-            if (block.timestamp <= (_creationTime + 2 days)) {
-                allowedAmount = (tSupply * DAY_TWO_LIMIT) / PRECISION;
-
-                if (lastUserBalance >= allowedAmount) {
-                    revert TransferAmountExceededForToday();
-                }
-            }
-
-            if (block.timestamp <= (_creationTime + 3 days)) {
-                allowedAmount = (tSupply * DAY_THREE_LIMIT) / PRECISION;
-
+            if (dayLimit > 0) {
+                uint256 allowedAmount = (tSupply * dayLimit) / PRECISION;
                 if (lastUserBalance >= allowedAmount) {
                     revert TransferAmountExceededForToday();
                 }
             }
         }
+
         if (amount > (balanceOf(PANCAKE_PAIR) * maxBuyPercent) / PRECISION) {
             revert TransferAmountExceedsPurchaseAmount();
         }
@@ -498,105 +507,72 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         address to,
         uint256 amount
     ) private swapLockOnPairCall {
-        if (from == address(0)) {
-            revert TransferFromZeroAddress();
-        }
-        if (to == address(0)) {
-            revert TransferToZeroAddress();
-        }
-        if (amount == 0) {
-            revert TransferAmountIsZero();
-        }
+        if (from == address(0)) revert TransferFromZeroAddress();
+        if (to == address(0)) revert TransferToZeroAddress();
+        if (amount == 0) revert TransferAmountIsZero();
 
-        uint256 contractTokenBalance = balanceOf(address(this));
         // whitelist to allow treasure to add liquidity:
+        uint256 contractTokenBalance = balanceOf(address(this));
         if (!whitelist[from] && !whitelist[to]) {
             if (from == PANCAKE_PAIR) {
                 _antiAbuse(from, to, amount);
             }
-
             // is the token balance of this contract address over the min number of
             // tokens that we need to initiate a swap + liquidity lock?
             // also, don't get caught in a circular liquidity event.
             // also, don't swap & liquify if sender is uniswap pair.
-
-            if (contractTokenBalance >= maxTxAmount) {
+            if (contractTokenBalance >= maxTxAmount)
                 contractTokenBalance = maxTxAmount;
-            }
         }
-
-        bool overMinTokenBalance = contractTokenBalance >=
-            liquiditySupplyThreshold;
         if (
-            overMinTokenBalance &&
+            contractTokenBalance >= liquiditySupplyThreshold &&
             _lock == SwapStatus.Open &&
             from != PANCAKE_PAIR &&
             swapAndLiquifyEnabled
         ) {
-            contractTokenBalance = liquiditySupplyThreshold;
             //add liquidity
-            _swapAndLiquify(contractTokenBalance);
+            _swapAndLiquify(liquiditySupplyThreshold);
         }
-
         //indicates if fee should be deducted from transfer
         bool takeFee = !_isExcludedFromFee[from] && !_isExcludedFromFee[to];
-
         _lotteryOnTransfer(from, to, amount, takeFee);
-
         // process transfer and lotteries
-        if (_lock == SwapStatus.Open) {
-            _distributeFees();
-        }
+        if (_lock == SwapStatus.Open) _distributeFees();
     }
 
     function _distributeFees() private lockTheSwap {
-        uint256 teamBalance = balanceOf(teamFeesAccumulationAddress);
-        if (teamBalance >= feeSupplyThreshold) {
-            uint256 balanceBefore = balanceOf(address(this));
-            uint256 half = teamBalance / 2;
-            uint256 otherHalf = balanceBefore - half;
-            _tokenTransfer(
-                teamFeesAccumulationAddress,
-                address(this),
-                teamBalance,
-                false
-            );
-            uint256 forth = half / 2;
-            uint256 otherForth = half - forth;
-            _swapTokensForTUSDT(forth, teamAddress);
-            _swapTokensForBNB(otherForth, teamAddress);
-            uint256 balanceAfter = balanceOf(address(this));
-            if (balanceAfter > 0) {
-                _tokenTransfer(
-                    address(this),
-                    teamAddress,
-                    balanceAfter - balanceBefore + otherHalf,
-                    false
-                );
-            }
-        }
+        _distributeFeeToAddress(teamFeesAccumulationAddress, teamAddress);
+        _distributeFeeToAddress(
+            treasuryFeesAccumulationAddress,
+            treasuryAddress
+        );
+    }
 
-        uint256 treasuryBalance = balanceOf(treasuryFeesAccumulationAddress);
-        if (treasuryBalance >= feeSupplyThreshold) {
+    function _distributeFeeToAddress(
+        address feeAccumulationAddress,
+        address destinationAddress
+    ) private {
+        uint256 accumulatedBalance = balanceOf(feeAccumulationAddress);
+        if (accumulatedBalance >= feeSupplyThreshold) {
             uint256 balanceBefore = balanceOf(address(this));
-            uint256 half = teamBalance / 2;
-            uint256 otherHalf = balanceBefore - half;
+
             _tokenTransfer(
-                treasuryFeesAccumulationAddress,
+                feeAccumulationAddress,
                 address(this),
-                treasuryBalance,
+                accumulatedBalance,
                 false
             );
-            uint256 forth = half / 2;
-            uint256 otherForth = half - forth;
-            _swapTokensForTUSDT(forth, treasuryAddress);
-            _swapTokensForBNB(otherForth, treasuryAddress);
+
+            _swapTokensForTUSDT(accumulatedBalance / 4, destinationAddress);
+            _swapTokensForBNB(accumulatedBalance / 4, destinationAddress);
+
             uint256 balanceAfter = balanceOf(address(this));
+
             if (balanceAfter > 0) {
                 _tokenTransfer(
                     address(this),
-                    treasuryAddress,
-                    balanceAfter - balanceBefore + otherHalf,
+                    destinationAddress,
+                    balanceAfter - balanceBefore + accumulatedBalance / 2,
                     false
                 );
             }
@@ -615,7 +591,10 @@ contract LayerZ is LotteryEngine, ILotteryToken {
             return;
         }
 
-        if (_isExcludedFromFee[_participant] || _isExcluded[_participant]) {
+        if (_isExcluded[_participant]) {
+            return;
+        }
+        if (_isExcludedFromFee[_participant]) {
             return;
         }
 
@@ -704,11 +683,10 @@ contract LayerZ is LotteryEngine, ILotteryToken {
     function _swapAndLiquify(uint256 contractTokenBalance) private lockTheSwap {
         // split the contract balance into halves
         uint256 half = contractTokenBalance / 2;
-        uint256 otherHalf = contractTokenBalance - half;
         uint256 nativeBalance = _swap(half);
 
         // add liquidity to pancake
-        _liquify(otherHalf, nativeBalance);
+        _liquify(half, nativeBalance);
     }
 
     function _swap(uint256 tokenAmount) private returns (uint256) {
