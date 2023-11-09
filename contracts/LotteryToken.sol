@@ -838,40 +838,31 @@ contract LayerZ is LotteryEngine, ILotteryToken {
                 SEVENTY_FIVE_PERCENTS) / PRECISION;
     }
 
-    function _seedTicketsArray(
-        address[100] memory _tickets,
-        uint256 _index,
-        address _player
-    ) internal pure {
-        if (_tickets[_index] == _player) {
-            _seedTicketsArray(_tickets, _index + 1, _player);
-        } else {
-            _tickets[_index] = _player;
-        }
-    }
-
     function _finishSmashTimeLottery(
         LotteryRound storage _round,
         RandomWords memory _random
     ) private {
         address player = _round.jackpotPlayer;
         address[100] memory tickets;
-        for (uint256 i; i < uint8(_round.jackpotEntry); ) {
+
+        for (uint256 i = 0; i < uint8(_round.jackpotEntry); ) {
             uint256 shift = (i * TWENTY_FIVE_BITS);
-            uint256 idx = _random.second >> shift;
-            assembly {
-                idx := mod(idx, 100)
+            uint256 idx = (_random.second >> shift) % 100;
+
+            if (tickets[idx] != player) {
+                tickets[idx] = player;
+            } else {
+                // Handle the case where the ticket at idx is already set to the player
+                // You can decide how to proceed: skip, find next empty slot, etc.
+                // For now, let's just increment idx and loop it back if it exceeds 99.
+                idx = (idx + 1) % 100;
+                tickets[idx] = player;
             }
-            _seedTicketsArray(tickets, idx, player);
-            unchecked {
-                ++i;
-            }
+
+            ++i;
         }
 
-        uint256 winnerIdx;
-        assembly {
-            winnerIdx := mod(mload(_random), 100)
-        }
+        uint256 winnerIdx = uint256(_random.first) % 100;
 
         if (tickets[winnerIdx] == player) {
             uint256 untaxedPrize = _calculateSmashTimeLotteryPrize();
