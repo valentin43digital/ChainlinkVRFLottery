@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 abstract contract Unabuseable {
     uint256 public maxBuyPercent = 10_000;
     bool public threeDaysProtectionEnabled = false;
-    
+
     function setThreeDaysProtection(bool _enabled) external onlyOwner {
         threeDaysProtectionEnabled = _enabled;
     }

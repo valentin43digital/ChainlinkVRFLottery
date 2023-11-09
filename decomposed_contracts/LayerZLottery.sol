@@ -3,18 +3,14 @@ pragma solidity ^0.8.19;
 
 import {VRFConsumerBaseV2} from "./lib/chainlink/VRFConsumerBaseV2.sol";
 
-import {
-	HoldersLotteryConfig, 
-	RuntimeCounter, 
-	LotteryConfig, 
-	LotteryRound,
-    ConsumerConfig, 
-	DistributionConfig, 
-	LotteryEngine
-} from "./lib/LotteryEngine.sol";
+import {HoldersLotteryConfig, RuntimeCounter, LotteryConfig, LotteryRound, ConsumerConfig, DistributionConfig, LotteryEngine} from "./lib/LotteryEngine.sol";
 import "./SwapLockable.sol";
 
-abstract contract LayerZLottery is VRFConsumerBaseV2, LotteryEngine, SwapLockable {
+abstract contract LayerZLottery is
+    VRFConsumerBaseV2,
+    LotteryEngine,
+    SwapLockable
+{
     uint256 public smashTimeWins;
     uint256 public donationLotteryWinTimes;
     uint256 public holdersLotteryWinTimes;
@@ -28,9 +24,7 @@ abstract contract LayerZLottery is VRFConsumerBaseV2, LotteryEngine, SwapLockabl
         ConsumerConfig memory _cConfig,
         DistributionConfig memory _dConfig,
         LotteryConfig memory _lConfig
-    ) 
-        LotteryEngine(_routerAddress, _fee, _cConfig, _dConfig, _lConfig)
-    {}
+    ) LotteryEngine(_routerAddress, _fee, _cConfig, _dConfig, _lConfig) {}
 
     function _fulfillRandomWords(
         uint256 _requestId,
@@ -137,7 +131,9 @@ abstract contract LayerZLottery is VRFConsumerBaseV2, LotteryEngine, SwapLockabl
         _counter = runtimeCounter.store();
     }
 
-    function _swapAndLiquify(uint256 contractTokenBalance) internal lockTheSwap {
+    function _swapAndLiquify(
+        uint256 contractTokenBalance
+    ) internal lockTheSwap {
         // split the contract balance into halves
         uint256 half = contractTokenBalance / 2;
         uint256 otherHalf = contractTokenBalance - half;

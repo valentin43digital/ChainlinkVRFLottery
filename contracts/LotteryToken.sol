@@ -1,34 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 import {ILotteryToken} from "./interfaces/ILotteryToken.sol";
 import {VRFConsumerBaseV2} from "./lib/chainlink/VRFConsumerBaseV2.sol";
-import {
-	HoldersLotteryConfig, 
-	RuntimeCounter, 
-	ConsumerConfig, 
-	DistributionConfig, 
-	LotteryConfig, 
-	LotteryEngine, 
-	LotteryRound
-} from "./lib/LotteryEngine.sol";
-import {
-	TWENTY_FIVE_BITS, 
-	DAY_ONE_LIMIT, 
-	DAY_TWO_LIMIT, 
-	DAY_THREE_LIMIT, 
-	MAX_UINT256, 
-	DEAD_ADDRESS, 
-	TWENTY_FIVE_PERCENTS, 
-	SEVENTY_FIVE_PERCENTS, 
-	PRECISION, 
-	LotteryType, 
-	RandomWords, 
-	toRandomWords, 
-	Fee
-} from "./lib/ConstantsAndTypes.sol";
+import {HoldersLotteryConfig, RuntimeCounter, ConsumerConfig, DistributionConfig, LotteryConfig, LotteryEngine, LotteryRound} from "./lib/LotteryEngine.sol";
+import {TWENTY_FIVE_BITS, DAY_ONE_LIMIT, DAY_TWO_LIMIT, DAY_THREE_LIMIT, MAX_UINT256, DEAD_ADDRESS, TWENTY_FIVE_PERCENTS, SEVENTY_FIVE_PERCENTS, PRECISION, LotteryType, RandomWords, toRandomWords, Fee} from "./lib/ConstantsAndTypes.sol";
 
 contract LayerZ is LotteryEngine, ILotteryToken {
     error TransferAmountExceededForToday();
@@ -939,7 +915,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
                 false
             );
             _swapTokensForBNB(prize, player);
-            
+
             totalAmountWonInSmashTimeLottery += prize;
             smashTimeWins += 1;
             _round.winner = player;
@@ -949,67 +925,62 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         _round.lotteryType = LotteryType.FINISHED_JACKPOT;
     }
 
-    function _finishHoldersLottery (
-		LotteryRound storage _round,
-		uint256 _random
-	) private {
-		uint256 winnerIdx;
-		uint256 holdersLength = _holders.first.length + _holders.second.length;
+    function _finishHoldersLottery(
+        LotteryRound storage _round,
+        uint256 _random
+    ) private {
+        uint256 winnerIdx;
+        uint256 holdersLength = _holders.first.length + _holders.second.length;
 
-		if (holdersLength == 0) {
-			return;
-		}
+        if (holdersLength == 0) {
+            return;
+        }
 
-		assembly {
-			winnerIdx := mod(_random, holdersLength)
-		}
-		address winner = _holders.allTickets()[winnerIdx];
-		uint256 prize = _calculateHoldersLotteryPrize();
+        assembly {
+            winnerIdx := mod(_random, holdersLength)
+        }
+        address winner = _holders.allTickets()[winnerIdx];
+        uint256 prize = _calculateHoldersLotteryPrize();
 
-		_tokenTransfer(
-			holderLotteryPrizePoolAddress,
-			winner,
-			prize,
-			false
-		);
+        _tokenTransfer(holderLotteryPrizePoolAddress, winner, prize, false);
 
-		holdersLotteryWinTimes += 1;
-		totalAmountWonInHoldersLottery += prize;
-		_round.winner = winner;
-		_round.prize = prize;
-		_round.lotteryType = LotteryType.FINISHED_HOLDERS;
-	}
+        holdersLotteryWinTimes += 1;
+        totalAmountWonInHoldersLottery += prize;
+        _round.winner = winner;
+        _round.prize = prize;
+        _round.lotteryType = LotteryType.FINISHED_HOLDERS;
+    }
 
-	function _finishDonationLottery (
-		LotteryRound storage _round,
-		uint256 _random
-	) private {
-		uint256 winnerIdx;
-		uint256 donatorsLength = _donators.length;
-		assembly {
-			winnerIdx := mod(_random, donatorsLength)
-		}
-		address winner = _donators[winnerIdx];
-		uint256 prize = _calculateDonationLotteryPrize();
+    function _finishDonationLottery(
+        LotteryRound storage _round,
+        uint256 _random
+    ) private {
+        uint256 winnerIdx;
+        uint256 donatorsLength = _donators.length;
+        assembly {
+            winnerIdx := mod(_random, donatorsLength)
+        }
+        address winner = _donators[winnerIdx];
+        uint256 prize = _calculateDonationLotteryPrize();
 
-		_tokenTransfer(
-			donationLotteryPrizePoolAddress,
-			address(this),
-			prize,
-			false
-		);
-		
-		_swapTokensForBNB(prize, winner);
-		
-		donationLotteryWinTimes += 1;
-		totalAmountWonInDonationLottery += prize;
-		_round.winner = winner;
-		_round.prize = prize;
-		_round.lotteryType = LotteryType.FINISHED_DONATION;
+        _tokenTransfer(
+            donationLotteryPrizePoolAddress,
+            address(this),
+            prize,
+            false
+        );
 
-		delete _donators;
-		_donationRound += 1;
-	}
+        _swapTokensForBNB(prize, winner);
+
+        donationLotteryWinTimes += 1;
+        totalAmountWonInDonationLottery += prize;
+        _round.winner = winner;
+        _round.prize = prize;
+        _round.lotteryType = LotteryType.FINISHED_DONATION;
+
+        delete _donators;
+        _donationRound += 1;
+    }
 
     function donate(uint256 _amount) external {
         _transfer(msg.sender, _lotteryConfig.donationAddress, _amount);
