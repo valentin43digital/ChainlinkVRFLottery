@@ -2,20 +2,9 @@
   "name": "lottery-token",
   "version": "1.0.0",
   "description": "ERC-20 token, Lottery contracts and Treasury contract",
-  "main": "index.js",
   "scripts": {
     "test": "npx hardhat test"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/shialabeoufsflag/lottery-token.git"
-  },
-  "author": "shialabeoufsflag",
-  "license": "AGPL-3.0-or-later",
-  "bugs": {
-    "url": "https://github.com/shialabeoufsflag/lottery-token/issues"
-  },
-  "homepage": "https://github.com/shialabeoufsflag/lottery-token#readme",
   "devDependencies": {
     "@chainlink/contracts": "^0.6.1",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
