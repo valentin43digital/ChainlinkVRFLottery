@@ -408,4 +408,38 @@ library TypesHelpers {
             }
         }
     }
+
+    // Function to get the number of tickets for a token holder
+    function getNumberOfTickets(
+        Holders storage _holders,
+        address _holder
+    ) public view returns (uint256) {
+        uint256 tickets = 0;
+
+        // Check if the holder is in the first array
+        if (_holders.idx[_holder][0] > 0) {
+            // Subtract 1 because array indices start from 0, but we stored starting from 1
+            uint256 indexInFirst = _holders.idx[_holder][0] - 1;
+            if (
+                indexInFirst < _holders.first.length &&
+                _holders.first[indexInFirst] == _holder
+            ) {
+                tickets += 1;
+            }
+        }
+
+        // Check if the holder is in the second array
+        if (_holders.idx[_holder][1] > 0) {
+            // Subtract 1 because array indices start from 0, but we stored starting from 1
+            uint256 indexInSecond = _holders.idx[_holder][1] - 1;
+            if (
+                indexInSecond < _holders.second.length &&
+                _holders.second[indexInSecond] == _holder
+            ) {
+                tickets += 2;
+            }
+        }
+
+        return tickets;
+    }
 }

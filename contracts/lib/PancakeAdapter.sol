@@ -85,7 +85,8 @@ abstract contract PancakeAdapter is Configuration {
 
         // make the swap
         PANCAKE_ROUTER.swapExactTokensForETHSupportingFeeOnTransferTokens(
-            _tokensAmount / 10,
+            _tokensAmount,
+            // _tokensAmount / 10, // why divided by 10?
             0, // accept any amount of ETH
             path,
             _to,
