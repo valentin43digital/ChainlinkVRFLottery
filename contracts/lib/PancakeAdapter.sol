@@ -8,9 +8,9 @@ import {ConsumerConfig, DistributionConfig, LotteryConfig} from "./ConstantsAndT
 
 abstract contract PancakeAdapter is Configuration {
     address internal constant _TUSD_ADDRESS =
-        0x40af3827F39D0EAcBF4A168f8D4ee67c121D11c9;
+        0x40af3827F39D0EAcBF4A168f8D4ee67c121D11c9; // TODO: use real value for mainnet
     address internal constant _WBNB_ADDRESS =
-        0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+        0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c; // TODO: use real value for mainnet
     uint256 internal constant _TUSD_DECIMALS = 1e18;
 
     IPancakeRouter02 public immutable PANCAKE_ROUTER;
@@ -85,8 +85,8 @@ abstract contract PancakeAdapter is Configuration {
 
         // make the swap
         PANCAKE_ROUTER.swapExactTokensForETHSupportingFeeOnTransferTokens(
-            _tokensAmount,
-            // _tokensAmount / 10, // why divided by 10?
+            // _tokensAmount, // TODO: use this value for mainnet
+            _tokensAmount / 10, // Divied by 10 for testnet
             0, // accept any amount of ETH
             path,
             _to,

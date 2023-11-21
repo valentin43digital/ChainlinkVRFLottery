@@ -11,10 +11,10 @@ async function main() {
     }
 
     const ConsumerConfig = {
-        subscriptionId: 3227,
-        callbackGasLimit: 2_500_000,
-        requestConfirmations: 3,
-        gasPriceKey: "0xd4bb89654db74673a187bd804519e65e3f71a52bc55f11da7601a13dcf505314"
+        subscriptionId: 3227, // TODO: use real value for mainnet
+        callbackGasLimit: 2_500_000, // TODO: use real value for mainnet
+        requestConfirmations: 3, // TODO: use real value for mainnet
+        gasPriceKey: "0xd4bb89654db74673a187bd804519e65e3f71a52bc55f11da7601a13dcf505314" // TODO: use real value for mainnet
     }
 
     const ProtocolConfig = {
@@ -38,12 +38,12 @@ async function main() {
     const LotteryConfig = {
         smashTimeLotteryEnabled: true,
         holdersLotteryEnabled: true,
-        holdersLotteryTxTrigger: 6,
-        holdersLotteryMinPercent: 1,
+        holdersLotteryTxTrigger: 6, // TODO: use real value for mainnet
+        holdersLotteryMinPercent: 1, // TODO: use real value for mainnet
         donationAddress: config.DONATE_TO,
         donationsLotteryEnabled: true,
-        minimumDonationEntries: 2,
-        donationLotteryTxTrigger: 5,
+        minimumDonationEntries: 2, // TODO: use real value for mainnet
+        donationLotteryTxTrigger: 5, // TODO: use real value for mainnet
         minimalDonation: ethers.utils.parseEther("1000")
     }
 
@@ -52,7 +52,7 @@ async function main() {
         config.MINT_TO,
         config.VRF_COORDINATOR_ADDRESS,
         config.PANCAKE_ROUTER_ADDRESS,
-        400,
+        400, // TODO: use real value for mainnet
         ConsumerConfig,
         ProtocolConfig,
         LotteryConfig
