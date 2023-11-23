@@ -16,7 +16,9 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
     mapping(address => uint256) private _nextDonationTimestamp;
     mapping(uint256 => mapping(address => uint256[]))
         internal _donatorTicketIdxs;
+    mapping(uint256 => mapping(address => bool)) private _hasDonated;
     address[] internal _donators;
+    uint256 internal _uniqueDonatorsCount;
     Holders internal _holders;
 
     Counter internal _counter;
@@ -113,47 +115,38 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
         address _transferrer,
         address _recipient,
         uint256 _amount,
-        DonationLotteryConfig memory _runtime,
-        RuntimeCounter memory _runtimeCounter
+        DonationLotteryConfig memory _runtime
     ) internal {
-        if (_runtime.enabled) {
-            // if donation lottery is running, increment tx counter.
-            _runtimeCounter.increaseDonationLotteryCounter();
-
-            // if this transfer is a donation, add a ticket for transferrer.
-            if (
-                _recipient == _runtime.donationAddress &&
-                _amount >= _runtime.minimalDonation
-            ) {
-                if (block.timestamp > _nextDonationTimestamp[_transferrer]) {
-                    uint256 length = _donators.length;
-                    _donators.push(_transferrer);
-                    _donatorTicketIdxs[_donationRound][_transferrer].push(
-                        length
-                    );
-                    _nextDonationTimestamp[_transferrer] =
-                        block.timestamp +
-                        DONATION_TICKET_TIMEOUT;
-                }
-            }
-
-            // check if minimum donation entries requirement is met.
-            if (_donators.length < _runtime.minimumEntries) {
-                return;
-            }
-
-            // check if tx counter can trigger the lottery.
-            if (
-                _runtimeCounter.donationLotteryTxCounter() <
-                _runtime.lotteryTxTrigger
-            ) {
-                return;
-            }
-            uint256 requestId = _requestRandomWords(1);
-            rounds[requestId].lotteryType = LotteryType.DONATION;
-
-            _runtimeCounter.resetDonationLotteryCounter();
+        if (!_runtime.enabled) {
+            return;
         }
+        // if this transfer is a donation, add a ticket for transferrer.
+        if (
+            _recipient == _runtime.donationAddress &&
+            _amount >= _runtime.minimalDonation
+        ) {
+            if (block.timestamp > _nextDonationTimestamp[_transferrer]) {
+                _donators.push(_transferrer);
+                _donatorTicketIdxs[_donationRound][_transferrer].push(
+                    _donators.length
+                );
+                if (!_hasDonated[_donationRound][_transferrer]) {
+                    _hasDonated[_donationRound][_transferrer] = true;
+                    _uniqueDonatorsCount++;
+                }
+                _nextDonationTimestamp[_transferrer] =
+                    block.timestamp +
+                    DONATION_TICKET_TIMEOUT;
+            }
+        }
+
+        // check if minimum donation entries requirement is met.
+        if (_uniqueDonatorsCount < _runtime.minimumEntries) {
+            return;
+        }
+
+        uint256 requestId = _requestRandomWords(1);
+        rounds[requestId].lotteryType = LotteryType.DONATION;
     }
 
     function transferDonationTicket(address _to) external {
@@ -188,6 +181,10 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
             for (; idx < newIdx; ++idx) {
                 _donators.push(recipient);
                 _donatorTicketIdxs[round][recipient].push(idx);
+                if (!_hasDonated[_donationRound][recipient]) {
+                    _hasDonated[_donationRound][recipient] = true;
+                    _uniqueDonatorsCount++;
+                }
             }
         }
     }
@@ -209,7 +206,7 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
     // Function to get the number of tickets for a donator
     function donationLotteryTicketsAmountPerDonator(
         address donator
-    ) public view returns (uint256) {
+    ) external view returns (uint256) {
         return _donatorTicketIdxs[_donationRound][donator].length;
     }
 }

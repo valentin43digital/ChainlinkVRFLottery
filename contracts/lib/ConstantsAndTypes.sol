@@ -43,26 +43,28 @@ struct DistributionConfig {
 
 struct LotteryConfig {
     bool smashTimeLotteryEnabled;
+    uint256 smashTimeLotteryConversionThreshold;
     bool holdersLotteryEnabled;
     uint64 holdersLotteryTxTrigger;
     uint256 holdersLotteryMinPercent;
     address donationAddress;
     bool donationsLotteryEnabled;
     uint64 minimumDonationEntries;
-    uint64 donationLotteryTxTrigger;
     uint256 minimalDonation;
+    uint256 donationConversionThreshold;
 }
 
 struct DonationLotteryConfig {
     address donationAddress;
     bool enabled;
     uint64 minimumEntries;
-    uint64 lotteryTxTrigger;
     uint256 minimalDonation;
+    uint256 donationConversionThreshold;
 }
 
 struct SmashTimeLotteryConfig {
     bool enabled;
+    uint256 smashTimeLotteryConversionThreshold;
 }
 
 struct HoldersLotteryConfig {
@@ -121,10 +123,11 @@ uint256 constant DAY_TWO_LIMIT = 100;
 uint256 constant DAY_THREE_LIMIT = 150;
 uint256 constant SEVENTY_FIVE_PERCENTS = 7500;
 uint256 constant TWENTY_FIVE_PERCENTS = 2500;
-uint256 constant PRECISION = 10000;
+uint256 constant PRECISION = 10_000;
 uint256 constant DONATION_TICKET_TIMEOUT = 3600;
 uint256 constant ONE_WORD = 0x20;
-uint256 constant FOUR_WORDS = 0x80;
+uint256 constant TWO_WORD = 0x40;
+uint256 constant FIVE_WORDS = 0x100;
 uint256 constant TWENTY_FIVE_BITS = 25;
 uint256 constant LOTTERY_CONFIG_SLOT = 10;
 
@@ -145,18 +148,14 @@ function addition(Counter a, Counter b) pure returns (Counter) {
     return Counter.wrap(Counter.unwrap(a) + Counter.unwrap(b));
 }
 
-function toRandomWords(
-    uint256[] memory _array
-) pure returns (RandomWords memory _words) {
+function toRandomWords(uint256[] memory _array) pure returns (RandomWords memory _words) {
     assembly {
         _words := add(_array, ONE_WORD)
     }
 }
 
 library TypesHelpers {
-    function compact(
-        DistributionConfig memory _config
-    ) internal pure returns (Fee) {
+    function compact(DistributionConfig memory _config) internal pure returns (Fee) {
         uint256 raw = _config.burnFee;
         raw = (raw << 32) + _config.liquidityFee;
         raw = (raw << 32) + _config.distributionFee;
@@ -168,38 +167,23 @@ library TypesHelpers {
         return Fee.wrap(raw);
     }
 
-    function burnFeePercent(
-        Fee feeConfig,
-        uint256 fee
-    ) internal pure returns (uint256) {
+    function burnFeePercent(Fee feeConfig, uint256 fee) internal pure returns (uint256) {
         return (fee * uint32(Fee.unwrap(feeConfig) >> 224)) / PRECISION;
     }
 
-    function liquidityFeePercent(
-        Fee feeConfig,
-        uint256 fee
-    ) internal pure returns (uint256) {
+    function liquidityFeePercent(Fee feeConfig, uint256 fee) internal pure returns (uint256) {
         return (fee * uint32(Fee.unwrap(feeConfig) >> 192)) / PRECISION;
     }
 
-    function distributionFeePercent(
-        Fee feeConfig,
-        uint256 fee
-    ) internal pure returns (uint256) {
+    function distributionFeePercent(Fee feeConfig, uint256 fee) internal pure returns (uint256) {
         return (fee * uint32(Fee.unwrap(feeConfig) >> 160)) / PRECISION;
     }
 
-    function treasuryFeePercent(
-        Fee feeConfig,
-        uint256 fee
-    ) internal pure returns (uint256) {
+    function treasuryFeePercent(Fee feeConfig, uint256 fee) internal pure returns (uint256) {
         return (fee * uint32(Fee.unwrap(feeConfig) >> 128)) / PRECISION;
     }
 
-    function devFeePercent(
-        Fee feeConfig,
-        uint256 fee
-    ) internal pure returns (uint256) {
+    function devFeePercent(Fee feeConfig, uint256 fee) internal pure returns (uint256) {
         return (fee * uint32(Fee.unwrap(feeConfig) >> 96)) / PRECISION;
     }
 
@@ -228,7 +212,7 @@ library TypesHelpers {
         LotteryConfig memory _runtime
     ) internal pure returns (DonationLotteryConfig memory donationRuntime) {
         assembly {
-            donationRuntime := add(_runtime, FOUR_WORDS)
+            donationRuntime := add(_runtime, FIVE_WORDS)
         }
     }
 
@@ -244,25 +228,19 @@ library TypesHelpers {
         LotteryConfig memory _runtime
     ) internal pure returns (HoldersLotteryConfig memory holdersRuntime) {
         assembly {
-            holdersRuntime := add(_runtime, ONE_WORD)
+            holdersRuntime := add(_runtime, TWO_WORD)
         }
     }
 
-    function store(
-        RuntimeCounter memory _counter
-    ) internal pure returns (Counter counter) {
+    function store(RuntimeCounter memory _counter) internal pure returns (Counter counter) {
         return _counter.counter;
     }
 
-    function increaseDonationLotteryCounter(
-        RuntimeCounter memory _counter
-    ) internal pure {
+    function increaseDonationLotteryCounter(RuntimeCounter memory _counter) internal pure {
         _counter.counter = _counter.counter + INCREMENT_DONATION_COUNTER;
     }
 
-    function increaseHoldersLotteryCounter(
-        RuntimeCounter memory _counter
-    ) internal pure {
+    function increaseHoldersLotteryCounter(RuntimeCounter memory _counter) internal pure {
         _counter.counter = _counter.counter + INCREMENT_HOLDER_COUNTER;
     }
 
@@ -278,19 +256,13 @@ library TypesHelpers {
         return uint256(uint128(Counter.unwrap(_counter.counter)));
     }
 
-    function resetDonationLotteryCounter(
-        RuntimeCounter memory _counter
-    ) internal pure {
+    function resetDonationLotteryCounter(RuntimeCounter memory _counter) internal pure {
         uint256 raw = Counter.unwrap(_counter.counter);
         _counter.counter = Counter.wrap(uint256(uint128(raw)));
     }
 
-    function resetHoldersLotteryCounter(
-        RuntimeCounter memory _counter
-    ) internal pure {
-        _counter.counter = Counter.wrap(
-            Counter.unwrap(_counter.counter) & ~uint128(0)
-        );
+    function resetHoldersLotteryCounter(RuntimeCounter memory _counter) internal pure {
+        _counter.counter = Counter.wrap(Counter.unwrap(_counter.counter) & ~uint128(0));
     }
 
     function counterMemPtr(
@@ -299,12 +271,8 @@ library TypesHelpers {
         runtimeCounter.counter = _counter;
     }
 
-    function allTickets(
-        Holders storage _holders
-    ) internal view returns (address[] memory) {
-        address[] memory merged = new address[](
-            _holders.first.length + _holders.second.length
-        );
+    function allTickets(Holders storage _holders) internal view returns (address[] memory) {
+        address[] memory merged = new address[](_holders.first.length + _holders.second.length);
         for (uint256 i = 0; i < merged.length; ++i) {
             merged[i] = i < _holders.first.length
                 ? _holders.first[i]
@@ -344,10 +312,7 @@ library TypesHelpers {
         delete _holders.idx[_holder];
     }
 
-    function existsFirst(
-        Holders storage _holders,
-        address _holder
-    ) internal view returns (bool) {
+    function existsFirst(Holders storage _holders, address _holder) internal view returns (bool) {
         return _holders.idx[_holder][0] != 0;
     }
 
@@ -382,16 +347,11 @@ library TypesHelpers {
         _holders.idx[_holder][1] = 0; // Reset the index to indicate removal
     }
 
-    function existsSecond(
-        Holders storage _holders,
-        address _holder
-    ) internal view returns (bool) {
+    function existsSecond(Holders storage _holders, address _holder) internal view returns (bool) {
         return _holders.idx[_holder][1] != 0;
     }
 
-    function isActive(
-        LotteryType _lotteryType
-    ) internal pure returns (bool res) {
+    function isActive(LotteryType _lotteryType) internal pure returns (bool res) {
         assembly {
             switch _lotteryType
             case 1 {
@@ -420,10 +380,7 @@ library TypesHelpers {
         if (_holders.idx[_holder][0] > 0) {
             // Subtract 1 because array indices start from 0, but we stored starting from 1
             uint256 indexInFirst = _holders.idx[_holder][0] - 1;
-            if (
-                indexInFirst < _holders.first.length &&
-                _holders.first[indexInFirst] == _holder
-            ) {
+            if (indexInFirst < _holders.first.length && _holders.first[indexInFirst] == _holder) {
                 tickets += 1;
             }
         }
@@ -433,8 +390,7 @@ library TypesHelpers {
             // Subtract 1 because array indices start from 0, but we stored starting from 1
             uint256 indexInSecond = _holders.idx[_holder][1] - 1;
             if (
-                indexInSecond < _holders.second.length &&
-                _holders.second[indexInSecond] == _holder
+                indexInSecond < _holders.second.length && _holders.second[indexInSecond] == _holder
             ) {
                 tickets += 2;
             }

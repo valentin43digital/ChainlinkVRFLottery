@@ -37,14 +37,15 @@ async function main() {
 
     const LotteryConfig = {
         smashTimeLotteryEnabled: true,
+        smashTimeLotteryConversionThreshold: ethers.utils.parseEther("10000"),
         holdersLotteryEnabled: true,
         holdersLotteryTxTrigger: 6, // TODO: use real value for mainnet
         holdersLotteryMinPercent: 1, // TODO: use real value for mainnet
         donationAddress: config.DONATE_TO,
         donationsLotteryEnabled: true,
         minimumDonationEntries: 2, // TODO: use real value for mainnet
-        donationLotteryTxTrigger: 5, // TODO: use real value for mainnet
-        minimalDonation: ethers.utils.parseEther("1000")
+        minimalDonation: ethers.utils.parseEther("1000"),
+        donationConversionThreshold: ethers.utils.parseEther("10000"),
     }
 
     const LotteryTokenFactory = await ethers.getContractFactory("LayerZ")
@@ -52,6 +53,7 @@ async function main() {
         config.MINT_TO,
         config.VRF_COORDINATOR_ADDRESS,
         config.PANCAKE_ROUTER_ADDRESS,
+        config.WBNB_ADDRESS,
         400, // TODO: use real value for mainnet
         ConsumerConfig,
         ProtocolConfig,

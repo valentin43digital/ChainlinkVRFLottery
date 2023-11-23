@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ILotteryToken} from "./interfaces/ILotteryToken.sol";
 import {VRFConsumerBaseV2} from "./lib/chainlink/VRFConsumerBaseV2.sol";
 import {HoldersLotteryConfig, RuntimeCounter, ConsumerConfig, DistributionConfig, LotteryConfig, LotteryEngine, LotteryRound} from "./lib/LotteryEngine.sol";
@@ -104,10 +105,13 @@ contract LayerZ is LotteryEngine, ILotteryToken {
     uint256 public totalAmountWonInDonationLottery;
     uint256 public totalAmountWonInHoldersLottery;
 
+    IERC20 private _wBNB;
+
     constructor(
         address _mintSupplyTo,
         address _coordinatorAddress,
         address _routerAddress,
+        IERC20 _wBNB_address,
         uint256 _fee,
         ConsumerConfig memory _cConfig,
         DistributionConfig memory _dConfig,
@@ -116,6 +120,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         VRFConsumerBaseV2(_coordinatorAddress)
         LotteryEngine(_routerAddress, _fee, _cConfig, _dConfig, _lConfig)
     {
+        _wBNB = _wBNB_address;
         _rOwned[_mintSupplyTo] = _rTotal;
         emit Transfer(address(0), _mintSupplyTo, _tTotal);
 
@@ -163,18 +168,12 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         return tokenFromReflection(_rOwned[account]);
     }
 
-    function transfer(
-        address recipient,
-        uint256 amount
-    ) external returns (bool) {
+    function transfer(address recipient, uint256 amount) external returns (bool) {
         _transfer(msg.sender, recipient, amount);
         return true;
     }
 
-    function allowance(
-        address owner,
-        address spender
-    ) external view returns (uint256) {
+    function allowance(address owner, address spender) external view returns (uint256) {
         return _allowances[owner][spender];
     }
 
@@ -228,9 +227,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
             revert CanNotDecreaseAllowance();
         }
         unchecked {
-            _allowances[msg.sender][spender] =
-                currentAllowance -
-                subtractedValue;
+            _allowances[msg.sender][spender] = currentAllowance - subtractedValue;
         }
         return true;
     }
@@ -261,9 +258,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         return rr.rTransferAmount;
     }
 
-    function tokenFromReflection(
-        uint256 rAmount
-    ) public view returns (uint256) {
+    function tokenFromReflection(uint256 rAmount) public view returns (uint256) {
         if (rAmount > _rTotal) {
             revert AmountIsGreaterThanTotalReflections();
         }
@@ -271,7 +266,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
     }
 
     function acquireAccruedBNBLotteryTax() external onlyOwner {
-        _swapTokensForBNB(accruedLotteryTax, owner());
+        _wBNB.transferFrom(address(this), owner(), accruedLotteryTax);
         accruedLotteryTax = 0;
     }
 
@@ -344,10 +339,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         return (rr, tt);
     }
 
-    function _getTValues(
-        uint256 tAmount,
-        bool takeFee
-    ) private view returns (TInfo memory tt) {
+    function _getTValues(uint256 tAmount, bool takeFee) private view returns (TInfo memory tt) {
         if (!takeFee) {
             tt.tTransferAmount = tAmount;
             tt.tBurnFee = 0;
@@ -366,23 +358,15 @@ contract LayerZ is LotteryEngine, ILotteryToken {
 
         // Combined calculation for efficiency
         tt.tBurnFee = (fees.burnFeePercent(fee) * tAmount) / PRECISION;
-        tt.tDistributionFee =
-            (fees.distributionFeePercent(fee) * tAmount) /
-            PRECISION;
+        tt.tDistributionFee = (fees.distributionFeePercent(fee) * tAmount) / PRECISION;
         tt.tTreasuryFee = (fees.treasuryFeePercent(fee) * tAmount) / PRECISION;
         tt.tDevFundFee = (fees.devFeePercent(fee) * tAmount) / PRECISION;
-        tt.tSmashTimePrizeFee =
-            (fees.smashTimeLotteryPrizeFeePercent(fee) * tAmount) /
-            PRECISION;
-        tt.tHolderPrizeFee =
-            (fees.holdersLotteryPrizeFeePercent(fee) * tAmount) /
-            PRECISION;
+        tt.tSmashTimePrizeFee = (fees.smashTimeLotteryPrizeFeePercent(fee) * tAmount) / PRECISION;
+        tt.tHolderPrizeFee = (fees.holdersLotteryPrizeFeePercent(fee) * tAmount) / PRECISION;
         tt.tDonationLotteryPrizeFee =
             (fees.donationLotteryPrizeFeePercent(fee) * tAmount) /
             PRECISION;
-        tt.tLiquidityFee =
-            (fees.liquidityFeePercent(fee) * tAmount) /
-            PRECISION;
+        tt.tLiquidityFee = (fees.liquidityFeePercent(fee) * tAmount) / PRECISION;
 
         uint totalFee = tt.tBurnFee +
             tt.tLiquidityFee +
@@ -461,14 +445,10 @@ contract LayerZ is LotteryEngine, ILotteryToken {
     }
 
     function _antiAbuse(address from, address to, uint256 amount) private view {
-        if (from == owner()) {
-            // If owner, skip checks
-            return;
-        }
-        if (to == owner()) {
-            // If owner, skip checks
-            return;
-        }
+        // If owner, skip checks
+        if (from == owner()) return;
+
+        if (to == owner()) return;
 
         (, uint256 tSupply) = _getCurrentSupply();
         uint256 lastUserBalance = balanceOf(to) +
@@ -481,11 +461,9 @@ contract LayerZ is LotteryEngine, ILotteryToken {
 
             if (timeSinceCreation <= 1 days) {
                 dayLimit = DAY_ONE_LIMIT;
-            }
-            if (timeSinceCreation <= 2 days) {
+            } else if (timeSinceCreation <= 2 days) {
                 dayLimit = DAY_TWO_LIMIT;
-            }
-            if (timeSinceCreation <= 3 days) {
+            } else if (timeSinceCreation <= 3 days) {
                 dayLimit = DAY_THREE_LIMIT;
             }
 
@@ -502,11 +480,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         }
     }
 
-    function _transfer(
-        address from,
-        address to,
-        uint256 amount
-    ) private swapLockOnPairCall {
+    function _transfer(address from, address to, uint256 amount) private swapLockOnPairCall {
         if (from == address(0)) revert TransferFromZeroAddress();
         if (to == address(0)) revert TransferToZeroAddress();
         if (amount == 0) revert TransferAmountIsZero();
@@ -521,8 +495,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
             // tokens that we need to initiate a swap + liquidity lock?
             // also, don't get caught in a circular liquidity event.
             // also, don't swap & liquify if sender is uniswap pair.
-            if (contractTokenBalance >= maxTxAmount)
-                contractTokenBalance = maxTxAmount;
+            if (contractTokenBalance >= maxTxAmount) contractTokenBalance = maxTxAmount;
         }
         if (
             contractTokenBalance >= liquiditySupplyThreshold &&
@@ -530,8 +503,9 @@ contract LayerZ is LotteryEngine, ILotteryToken {
             from != PANCAKE_PAIR &&
             swapAndLiquifyEnabled
         ) {
+            contractTokenBalance = liquiditySupplyThreshold;
             //add liquidity
-            _swapAndLiquify(liquiditySupplyThreshold);
+            _swapAndLiquify(contractTokenBalance);
         }
         //indicates if fee should be deducted from transfer
         bool takeFee = !_isExcludedFromFee[from] && !_isExcludedFromFee[to];
@@ -542,10 +516,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
 
     function _distributeFees() private lockTheSwap {
         _distributeFeeToAddress(teamFeesAccumulationAddress, teamAddress);
-        _distributeFeeToAddress(
-            treasuryFeesAccumulationAddress,
-            treasuryAddress
-        );
+        _distributeFeeToAddress(treasuryFeesAccumulationAddress, treasuryAddress);
     }
 
     function _distributeFeeToAddress(
@@ -556,12 +527,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         if (accumulatedBalance >= feeSupplyThreshold) {
             uint256 balanceBefore = balanceOf(address(this));
 
-            _tokenTransfer(
-                feeAccumulationAddress,
-                address(this),
-                accumulatedBalance,
-                false
-            );
+            _tokenTransfer(feeAccumulationAddress, address(this), accumulatedBalance, false);
 
             _swapTokensForTUSDT(accumulatedBalance / 4, destinationAddress);
             _swapTokensForBNB(accumulatedBalance / 4, destinationAddress);
@@ -613,9 +579,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         }
     }
 
-    function _holdersEligibilityThreshold(
-        uint256 _minPercent
-    ) private view returns (uint256) {
+    function _holdersEligibilityThreshold(uint256 _minPercent) private view returns (uint256) {
         return ((_tTotal - balanceOf(DEAD_ADDRESS)) * _minPercent) / PRECISION;
     }
 
@@ -652,15 +616,32 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         LotteryConfig memory runtime = _lotteryConfig;
         RuntimeCounter memory runtimeCounter = _counter.counterMemPtr();
 
-        _smashTimeLottery(
-            _transferrer,
-            _recipient,
-            _amount,
-            runtime.toSmashTimeLotteryRuntime()
-        );
+        if (
+            balanceOf(smashTimeLotteryPrizePoolAddress) >=
+            _lotteryConfig.smashTimeLotteryConversionThreshold
+        ) {
+            uint256 conversionAmount = _calculateSmashTimeLotteryConversionAmount();
+            _tokenTransfer(
+                smashTimeLotteryPrizePoolAddress,
+                address(this),
+                conversionAmount,
+                false
+            );
+            _swapTokensForBNB(conversionAmount, smashTimeLotteryPrizePoolAddress);
+        }
+
+        _smashTimeLottery(_transferrer, _recipient, _amount, runtime.toSmashTimeLotteryRuntime());
 
         //transfer amount, it will take tax, burn, liquidity fee
         _tokenTransfer(_transferrer, _recipient, _amount, _takeFee);
+
+        if (
+            balanceOf(donationLotteryPrizePoolAddress) >= _lotteryConfig.donationConversionThreshold
+        ) {
+            uint256 conversionAmount = _calculateDonationLotteryConversionAmount();
+            _tokenTransfer(donationLotteryPrizePoolAddress, address(this), conversionAmount, false);
+            _swapTokensForBNB(conversionAmount, donationLotteryPrizePoolAddress);
+        }
 
         _holdersLottery(
             _transferrer,
@@ -669,13 +650,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
             runtimeCounter
         );
 
-        _donationsLottery(
-            _transferrer,
-            _recipient,
-            _amount,
-            runtime.toDonationLotteryRuntime(),
-            runtimeCounter
-        );
+        _donationsLottery(_transferrer, _recipient, _amount, runtime.toDonationLotteryRuntime());
 
         _counter = runtimeCounter.store();
     }
@@ -801,10 +776,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         return _calcFeePercent();
     }
 
-    function _finishRound(
-        uint256 _requestId,
-        RandomWords memory _random
-    ) private {
+    function _finishRound(uint256 _requestId, RandomWords memory _random) private {
         LotteryRound storage round = rounds[_requestId];
 
         if (round.lotteryType == LotteryType.JACKPOT) {
@@ -821,21 +793,23 @@ contract LayerZ is LotteryEngine, ILotteryToken {
     }
 
     function _calculateSmashTimeLotteryPrize() private view returns (uint256) {
-        return
-            (balanceOf(smashTimeLotteryPrizePoolAddress) *
-                TWENTY_FIVE_PERCENTS) / PRECISION;
+        return (smashTimeLotteryPrizePoolAddress.balance * TWENTY_FIVE_PERCENTS) / PRECISION;
     }
 
     function _calculateHoldersLotteryPrize() private view returns (uint256) {
-        return
-            (balanceOf(holderLotteryPrizePoolAddress) * SEVENTY_FIVE_PERCENTS) /
-            PRECISION;
+        return (balanceOf(holderLotteryPrizePoolAddress) * SEVENTY_FIVE_PERCENTS) / PRECISION;
     }
 
     function _calculateDonationLotteryPrize() private view returns (uint256) {
-        return
-            (balanceOf(donationLotteryPrizePoolAddress) *
-                SEVENTY_FIVE_PERCENTS) / PRECISION;
+        return (donationLotteryPrizePoolAddress.balance * SEVENTY_FIVE_PERCENTS) / PRECISION;
+    }
+
+    function _calculateDonationLotteryConversionAmount() private view returns (uint256) {
+        return (balanceOf(donationLotteryPrizePoolAddress) * SEVENTY_FIVE_PERCENTS) / PRECISION;
+    }
+
+    function _calculateSmashTimeLotteryConversionAmount() private view returns (uint256) {
+        return (balanceOf(smashTimeLotteryPrizePoolAddress) * SEVENTY_FIVE_PERCENTS) / PRECISION;
     }
 
     function _finishSmashTimeLottery(
@@ -866,24 +840,10 @@ contract LayerZ is LotteryEngine, ILotteryToken {
 
         if (tickets[winnerIdx] == player) {
             uint256 untaxedPrize = _calculateSmashTimeLotteryPrize();
-            uint256 tax = (untaxedPrize * smashTimeLotteryPrizeFeePercent()) /
-                maxBuyPercent;
+            uint256 tax = (untaxedPrize * smashTimeLotteryPrizeFeePercent()) / maxBuyPercent;
             accruedLotteryTax += tax;
-            _tokenTransfer(
-                smashTimeLotteryPrizePoolAddress,
-                address(this),
-                tax,
-                false
-            );
-
             uint256 prize = untaxedPrize - tax;
-            _tokenTransfer(
-                smashTimeLotteryPrizePoolAddress,
-                address(this),
-                prize,
-                false
-            );
-            _swapTokensForBNB(prize, player);
+            _wBNB.transferFrom(donationLotteryPrizePoolAddress, player, prize);
 
             totalAmountWonInSmashTimeLottery += prize;
             smashTimeWins += 1;
@@ -894,10 +854,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         _round.lotteryType = LotteryType.FINISHED_JACKPOT;
     }
 
-    function _finishHoldersLottery(
-        LotteryRound storage _round,
-        uint256 _random
-    ) private {
+    function _finishHoldersLottery(LotteryRound storage _round, uint256 _random) private {
         uint256 winnerIdx;
         uint256 holdersLength = _holders.first.length + _holders.second.length;
 
@@ -920,10 +877,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         _round.lotteryType = LotteryType.FINISHED_HOLDERS;
     }
 
-    function _finishDonationLottery(
-        LotteryRound storage _round,
-        uint256 _random
-    ) private {
+    function _finishDonationLottery(LotteryRound storage _round, uint256 _random) private {
         uint256 winnerIdx;
         uint256 donatorsLength = _donators.length;
         assembly {
@@ -932,14 +886,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         address winner = _donators[winnerIdx];
         uint256 prize = _calculateDonationLotteryPrize();
 
-        _tokenTransfer(
-            donationLotteryPrizePoolAddress,
-            address(this),
-            prize,
-            false
-        );
-
-        _swapTokensForBNB(prize, winner);
+        _wBNB.transferFrom(donationLotteryPrizePoolAddress, winner, prize);
 
         donationLotteryWinTimes += 1;
         totalAmountWonInDonationLottery += prize;
@@ -948,6 +895,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         _round.lotteryType = LotteryType.FINISHED_DONATION;
 
         delete _donators;
+        _uniqueDonatorsCount = 0;
         _donationRound += 1;
     }
 
@@ -955,14 +903,12 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         _transfer(msg.sender, _lotteryConfig.donationAddress, _amount);
     }
 
-    function updateHolderList(
-        address[] calldata holdersToCheck
-    ) external onlyOwner {
+    function updateHolderList(address[] calldata holdersToCheck) external onlyOwner {
         for (uint i = 0; i < holdersToCheck.length; i++) {
             _checkForHoldersLotteryEligibility(
                 holdersToCheck[i],
-                ((_tTotal - balanceOf(DEAD_ADDRESS)) *
-                    _lotteryConfig.holdersLotteryMinPercent) / PRECISION
+                ((_tTotal - balanceOf(DEAD_ADDRESS)) * _lotteryConfig.holdersLotteryMinPercent) /
+                    PRECISION
             );
         }
     }

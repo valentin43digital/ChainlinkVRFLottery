@@ -43,9 +43,7 @@ abstract contract Configuration is
         return currentFees >= FEE_CAP ? FEE_CAP : currentFees;
     }
 
-    function setConsumerConfig(
-        ConsumerConfig calldata _newConfig
-    ) external onlyOwner {
+    function setConsumerConfig(ConsumerConfig calldata _newConfig) external onlyOwner {
         _setConfig(_newConfig);
     }
 
@@ -57,9 +55,7 @@ abstract contract Configuration is
         _setCallbackGasLimit(_callbackGasLimit);
     }
 
-    function setRequestConfirmations(
-        uint16 _requestConfirmations
-    ) external onlyOwner {
+    function setRequestConfirmations(uint16 _requestConfirmations) external onlyOwner {
         _setRequestConfirmations(_requestConfirmations);
     }
 
@@ -67,21 +63,15 @@ abstract contract Configuration is
         _setGasPriceKey(_gasPriceKey);
     }
 
-    function setHolderLotteryPrizePoolAddress(
-        address _newAddress
-    ) external onlyOwner {
+    function setHolderLotteryPrizePoolAddress(address _newAddress) external onlyOwner {
         _setHolderLotteryPrizePoolAddress(_newAddress);
     }
 
-    function setSmashTimeLotteryPrizePoolAddress(
-        address _newAddress
-    ) external onlyOwner {
+    function setSmashTimeLotteryPrizePoolAddress(address _newAddress) external onlyOwner {
         _setSmashTimeLotteryPrizePoolAddress(_newAddress);
     }
 
-    function setDonationLotteryPrizePoolAddress(
-        address _newAddress
-    ) external onlyOwner {
+    function setDonationLotteryPrizePoolAddress(address _newAddress) external onlyOwner {
         _setDonationLotteryPrizePoolAddress(_newAddress);
     }
 
@@ -89,9 +79,7 @@ abstract contract Configuration is
         _setTeamAddress(_newAddress);
     }
 
-    function setTeamAccumulationAddress(
-        address _newAddress
-    ) external onlyOwner {
+    function setTeamAccumulationAddress(address _newAddress) external onlyOwner {
         _setTeamAccumulationAddress(_newAddress);
     }
 
@@ -99,9 +87,7 @@ abstract contract Configuration is
         _setTreasuryAddress(_newAddress);
     }
 
-    function setTreasuryAccumulationAddress(
-        address _newAddress
-    ) external onlyOwner {
+    function setTreasuryAccumulationAddress(address _newAddress) external onlyOwner {
         _setTreasuryAccumulationAddress(_newAddress);
     }
 
@@ -133,13 +119,7 @@ abstract contract Configuration is
         _setHoldersLotteryTxTrigger(_txAmount);
     }
 
-    function setDonationLotteryTxTrigger(uint64 _txAmount) external onlyOwner {
-        _setDonationLotteryTxTrigger(_txAmount);
-    }
-
-    function setHoldersLotteryMinPercent(
-        uint256 _minPercent
-    ) external onlyOwner {
+    function setHoldersLotteryMinPercent(uint256 _minPercent) external onlyOwner {
         _setHoldersLotteryMinPercent(_minPercent);
     }
 
@@ -151,13 +131,23 @@ abstract contract Configuration is
         _setMinimanDonation(_minimalDonation);
     }
 
+    function setDonationConversionThreshold(
+        uint256 _donationConversionThreshold
+    ) external onlyOwner {
+        _setDonationConversionThreshold(_donationConversionThreshold);
+    }
+
+    function setSmashTimeLotteryConversionThreshold(
+        uint256 _smashTimeLotteryConversionThreshold
+    ) external onlyOwner {
+        _setSmashTimeLotteryConversionThreshold(_smashTimeLotteryConversionThreshold);
+    }
+
     function setFees(uint256 _fee) external onlyOwner {
         fee = _fee;
     }
 
-    function setMinimumDonationEntries(
-        uint64 _minimumEntries
-    ) external onlyOwner {
+    function setMinimumDonationEntries(uint64 _minimumEntries) external onlyOwner {
         _setMinimumDonationEntries(_minimumEntries);
     }
 
@@ -197,14 +187,16 @@ abstract contract Configuration is
         return _isExcludedFromFee[account];
     }
 
-    function isExcludedFromReward(
-        address account
-    ) external view returns (bool) {
+    function isExcludedFromReward(address account) external view returns (bool) {
         return _isExcluded[account];
     }
 
     function smashTimeLotteryEnabled() external view returns (bool) {
         return _lotteryConfig.smashTimeLotteryEnabled;
+    }
+
+    function smashTimeLotteryConversionThreshold() external view returns (uint256) {
+        return _lotteryConfig.smashTimeLotteryConversionThreshold;
     }
 
     function holdersLotteryEnabled() external view returns (bool) {
@@ -231,12 +223,12 @@ abstract contract Configuration is
         return _lotteryConfig.minimumDonationEntries;
     }
 
-    function donationLotteryTxTrigger() external view returns (uint64) {
-        return _lotteryConfig.donationLotteryTxTrigger;
-    }
-
     function minimalDonation() external view returns (uint256) {
         return _lotteryConfig.minimalDonation;
+    }
+
+    function donationConversionThreshold() external view returns (uint256) {
+        return _lotteryConfig.donationConversionThreshold;
     }
 
     function subscriptionId() external view returns (uint64) {

@@ -9,6 +9,7 @@ const DONATION_POOL = "0xf45d91b91Eb193157FaDD79B76831E18F8a9D511";
 const HODL_POOL = "0x14Bf6B5b1b25e8bd94e5c59Df8b557156D38e5dD";
 const TEAM_ACCUMULATION = "0x0000000000000000000000000000000000000001";
 const TREASURY_ACCUMULATION = "0x0000000000000000000000000000000000000002";
+const WBNB_ADDRESS = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 
 const ConsumerConfig = {
   subscriptionId: 3227,
@@ -38,20 +39,22 @@ const ProtocolConfig = {
 
 const LotteryConfig = {
   smashTimeLotteryEnabled: true,
+  smashTimeLotteryConversionThreshold: "10000000000000000000000",
   holdersLotteryEnabled: true,
   holdersLotteryTxTrigger: 6,
   holdersLotteryMinPercent: 1,
   donationAddress: DONATE_TO,
   donationsLotteryEnabled: true,
   minimumDonationEntries: 2,
-  donationLotteryTxTrigger: 5,
   minimalDonation: "1000000000000000000000",
+  donationConversionThreshold: "10000000000000000000000",
 };
 
 module.exports = [
   MINT_TO,
   COORDINATOR_ADDRESS,
   ROUTER_ADDRESS,
+  WBNB_ADDRESS,
   400,
   ConsumerConfig,
   ProtocolConfig,

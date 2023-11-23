@@ -42,8 +42,6 @@ interface IConfiguration {
 
     function setHoldersLotteryTxTrigger(uint64 _txAmount) external;
 
-    function setDonationLotteryTxTrigger(uint64 _txAmount) external;
-
     function setHoldersLotteryMinPercent(uint256 _minPercent) external;
 
     function setDonationAddress(address _donationAddress) external;
@@ -76,6 +74,11 @@ interface IConfiguration {
 
     function smashTimeLotteryEnabled() external view returns (bool);
 
+    function smashTimeLotteryConversionThreshold()
+        external
+        view
+        returns (uint256);
+
     function holdersLotteryEnabled() external view returns (bool);
 
     function holdersLotteryTxTrigger() external view returns (uint64);
@@ -88,9 +91,9 @@ interface IConfiguration {
 
     function minimumDonationEntries() external view returns (uint64);
 
-    function donationLotteryTxTrigger() external view returns (uint64);
-
     function minimalDonation() external view returns (uint256);
+
+    function donationConversionThreshold() external view returns (uint256);
 
     function subscriptionId() external view returns (uint64);
 
