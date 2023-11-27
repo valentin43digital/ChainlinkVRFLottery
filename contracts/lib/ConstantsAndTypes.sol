@@ -373,7 +373,7 @@ library TypesHelpers {
     function getNumberOfTickets(
         Holders storage _holders,
         address _holder
-    ) public view returns (uint256) {
+    ) internal view returns (uint256) {
         uint256 tickets = 0;
 
         // Check if the holder is in the first array

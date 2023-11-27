@@ -111,7 +111,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         address _mintSupplyTo,
         address _coordinatorAddress,
         address _routerAddress,
-        IERC20 _wBNB_address,
+        address _wBNB_address,
         uint256 _fee,
         ConsumerConfig memory _cConfig,
         DistributionConfig memory _dConfig,
@@ -120,7 +120,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         VRFConsumerBaseV2(_coordinatorAddress)
         LotteryEngine(_routerAddress, _fee, _cConfig, _dConfig, _lConfig)
     {
-        _wBNB = _wBNB_address;
+        _wBNB = IERC20(_wBNB_address);
         _rOwned[_mintSupplyTo] = _rTotal;
         emit Transfer(address(0), _mintSupplyTo, _tTotal);
 

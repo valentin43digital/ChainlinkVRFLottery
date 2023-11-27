@@ -8,7 +8,7 @@ import {ConsumerConfig, DistributionConfig, LotteryConfig} from "./ConstantsAndT
 
 abstract contract PancakeAdapter is Configuration {
     address internal constant _TUSD_ADDRESS =
-        0x40af3827F39D0EAcBF4A168f8D4ee67c121D11c9; // TODO: use real value for mainnet
+        0xc515Df5D4a97Efc3f2adb1c95929da061A606Ac2; // TODO: use real value for mainnet
     address internal constant _WBNB_ADDRESS =
         0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c; // TODO: use real value for mainnet
     uint256 internal constant _TUSD_DECIMALS = 1e18;
