@@ -797,7 +797,8 @@ contract LayerZ is LotteryEngine, ILotteryToken {
     }
 
     function _calculateSmashTimeLotteryPrize() private view returns (uint256) {
-        return (smashTimeLotteryPrizePoolAddress.balance * TWENTY_FIVE_PERCENTS) / PRECISION;
+        return
+            (_wBNB.balanceOf(smashTimeLotteryPrizePoolAddress) * TWENTY_FIVE_PERCENTS) / PRECISION;
     }
 
     function _calculateHoldersLotteryPrize() private view returns (uint256) {
@@ -805,7 +806,8 @@ contract LayerZ is LotteryEngine, ILotteryToken {
     }
 
     function _calculateDonationLotteryPrize() private view returns (uint256) {
-        return (donationLotteryPrizePoolAddress.balance * SEVENTY_FIVE_PERCENTS) / PRECISION;
+        return
+            (_wBNB.balanceOf(donationLotteryPrizePoolAddress) * SEVENTY_FIVE_PERCENTS) / PRECISION;
     }
 
     function _calculateDonationLotteryConversionAmount() private view returns (uint256) {

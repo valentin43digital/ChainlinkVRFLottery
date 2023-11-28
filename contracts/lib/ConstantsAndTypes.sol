@@ -129,7 +129,6 @@ uint256 constant FIVE_WORDS = 0x100;
 uint256 constant TWENTY_FIVE_BITS = 25;
 uint256 constant LOTTERY_CONFIG_SLOT = 10;
 
-Counter constant INCREMENT_DONATION_COUNTER = Counter.wrap((uint256(1) << 128));
 Counter constant INCREMENT_HOLDER_COUNTER = Counter.wrap(1);
 
 using {addition as +} for Counter global;
@@ -234,29 +233,14 @@ library TypesHelpers {
         return _counter.counter;
     }
 
-    function increaseDonationLotteryCounter(RuntimeCounter memory _counter) internal pure {
-        _counter.counter = _counter.counter + INCREMENT_DONATION_COUNTER;
-    }
-
     function increaseHoldersLotteryCounter(RuntimeCounter memory _counter) internal pure {
         _counter.counter = _counter.counter + INCREMENT_HOLDER_COUNTER;
-    }
-
-    function donationLotteryTxCounter(
-        RuntimeCounter memory _counter
-    ) internal pure returns (uint256) {
-        return Counter.unwrap(_counter.counter) >> 128;
     }
 
     function holdersLotteryTxCounter(
         RuntimeCounter memory _counter
     ) internal pure returns (uint256) {
         return uint256(uint128(Counter.unwrap(_counter.counter)));
-    }
-
-    function resetDonationLotteryCounter(RuntimeCounter memory _counter) internal pure {
-        uint256 raw = Counter.unwrap(_counter.counter);
-        _counter.counter = Counter.wrap(uint256(uint128(raw)));
     }
 
     function resetHoldersLotteryCounter(RuntimeCounter memory _counter) internal pure {

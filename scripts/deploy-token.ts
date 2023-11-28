@@ -36,10 +36,10 @@ async function main() {
     }
 
     const LotteryConfig = {
-        smashTimeLotteryEnabled: true,
-        smashTimeLotteryConversionThreshold: ethers.utils.parseEther("1000"),
+        smashTimeLotteryEnabled: false,
+        smashTimeLotteryConversionThreshold: ethers.utils.parseEther("10"),
         holdersLotteryEnabled: true,
-        holdersLotteryTxTrigger: 6, // TODO: use real value for mainnet
+        holdersLotteryTxTrigger: 20, // TODO: use real value for mainnet
         holdersLotteryMinPercent: 1, // TODO: use real value for mainnet
         donationsLotteryEnabled: true,
         minimumDonationEntries: 2, // TODO: use real value for mainnet
