@@ -563,17 +563,18 @@ contract TestZ is LotteryEngine, ILotteryToken {
         }
 
         uint256 balance = balanceOf(_participant);
-        if (balance < _balanceThreshold) {
-            _holders.removeFirst(_participant);
-            _holders.removeSecond(_participant);
-        } else {
-            if (balance < _balanceThreshold * 3) {
-                _holders.addFirst(_participant);
-                _holders.removeSecond(_participant);
-            } else {
-                _holders.addSecond(_participant);
-                _holders.removeFirst(_participant);
-            }
+
+        // Remove from both lists initially to reset the participant's status
+        _holders.removeFirst(_participant);
+        _holders.removeSecond(_participant);
+
+        // Add to the first list if balance is at least _balanceThreshold but less than 3 * _balanceThreshold
+        if (balance >= _balanceThreshold && balance < _balanceThreshold * 3) {
+            _holders.addFirst(_participant);
+        }
+        // Add to the second list if balance is 3 * _balanceThreshold or more
+        else if (balance >= _balanceThreshold * 3) {
+            _holders.addSecond(_participant);
         }
     }
 
