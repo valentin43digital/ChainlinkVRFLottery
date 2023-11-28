@@ -7,10 +7,8 @@ import {Configuration} from "./configs/Configuration.sol";
 import {ConsumerConfig, DistributionConfig, LotteryConfig} from "./ConstantsAndTypes.sol";
 
 abstract contract PancakeAdapter is Configuration {
-    address internal constant _TUSD_ADDRESS =
-        0xc515Df5D4a97Efc3f2adb1c95929da061A606Ac2; // TODO: use real value for mainnet
-    address internal constant _WBNB_ADDRESS =
-        0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c; // TODO: use real value for mainnet
+    address internal constant _TUSD_ADDRESS = 0xc515Df5D4a97Efc3f2adb1c95929da061A606Ac2; // TODO: use real value for mainnet
+    address internal constant _WBNB_ADDRESS = 0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd; // TODO: use real value for mainnet
     uint256 internal constant _TUSD_DECIMALS = 1e18;
 
     IPancakeRouter02 public immutable PANCAKE_ROUTER;
@@ -23,24 +21,13 @@ abstract contract PancakeAdapter is Configuration {
         ConsumerConfig memory _consumerConfig,
         DistributionConfig memory _distributionConfig,
         LotteryConfig memory _lotteryConfig
-    )
-        Configuration(
-            _fee,
-            _consumerConfig,
-            _distributionConfig,
-            _lotteryConfig
-        )
-    {
+    ) Configuration(_fee, _consumerConfig, _distributionConfig, _lotteryConfig) {
         PANCAKE_ROUTER = IPancakeRouter02(_routerAddress);
         PANCAKE_PAIR = _createPancakeSwapPair();
     }
 
     function _createPancakeSwapPair() internal returns (address) {
-        return
-            IPancakeFactory(PANCAKE_ROUTER.factory()).createPair(
-                address(this),
-                _WBNB_ADDRESS
-            );
+        return IPancakeFactory(PANCAKE_ROUTER.factory()).createPair(address(this), _WBNB_ADDRESS);
     }
 
     function _addLiquidity(uint256 tokenAmount, uint256 bnbAmount) internal {
@@ -54,9 +41,7 @@ abstract contract PancakeAdapter is Configuration {
         );
     }
 
-    function _swapTokensForBNB(
-        uint256 _tokensAmount
-    ) internal returns (uint256 bnbAmount) {
+    function _swapTokensForBNB(uint256 _tokensAmount) internal returns (uint256 bnbAmount) {
         uint256 balanceBeforeSwap = address(this).balance;
         // generate the pancakeswap pair path of Token -> BNB
         address[] memory path = new address[](2);
@@ -85,8 +70,7 @@ abstract contract PancakeAdapter is Configuration {
 
         // make the swap
         PANCAKE_ROUTER.swapExactTokensForETHSupportingFeeOnTransferTokens(
-            // _tokensAmount, // TODO: use this value for mainnet
-            _tokensAmount / 10, // Divied by 10 for testnet
+            _tokensAmount,
             0, // accept any amount of ETH
             path,
             _to,
@@ -110,9 +94,7 @@ abstract contract PancakeAdapter is Configuration {
         );
     }
 
-    function _TokenPriceInUSD(
-        uint256 _amount
-    ) internal view returns (uint256 usdAmount) {
+    function _TokenPriceInUSD(uint256 _amount) internal view returns (uint256 usdAmount) {
         // generate the uniswap pair path of BNB -> USDT
         address[] memory path = new address[](3);
         path[0] = address(this);

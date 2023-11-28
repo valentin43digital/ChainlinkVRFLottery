@@ -37,7 +37,7 @@ async function main() {
 
     const LotteryConfig = {
         smashTimeLotteryEnabled: true,
-        smashTimeLotteryConversionThreshold: ethers.utils.parseEther("10000"),
+        smashTimeLotteryConversionThreshold: ethers.utils.parseEther("1000"),
         holdersLotteryEnabled: true,
         holdersLotteryTxTrigger: 6, // TODO: use real value for mainnet
         holdersLotteryMinPercent: 1, // TODO: use real value for mainnet
@@ -45,7 +45,7 @@ async function main() {
         donationsLotteryEnabled: true,
         minimumDonationEntries: 2, // TODO: use real value for mainnet
         minimalDonation: ethers.utils.parseEther("1000"),
-        donationConversionThreshold: ethers.utils.parseEther("10000"),
+        donationConversionThreshold: ethers.utils.parseEther("1000"),
     }
 
     const LotteryTokenFactory = await ethers.getContractFactory("LayerZ")

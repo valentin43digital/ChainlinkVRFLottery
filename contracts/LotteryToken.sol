@@ -635,6 +635,13 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         //transfer amount, it will take tax, burn, liquidity fee
         _tokenTransfer(_transferrer, _recipient, _amount, _takeFee);
 
+        _holdersLottery(
+            _transferrer,
+            _recipient,
+            runtime.toHoldersLotteryRuntime(),
+            runtimeCounter
+        );
+
         if (
             balanceOf(donationLotteryPrizePoolAddress) >= _lotteryConfig.donationConversionThreshold
         ) {
@@ -642,13 +649,6 @@ contract LayerZ is LotteryEngine, ILotteryToken {
             _tokenTransfer(donationLotteryPrizePoolAddress, address(this), conversionAmount, false);
             _swapTokensForBNB(conversionAmount, donationLotteryPrizePoolAddress);
         }
-
-        _holdersLottery(
-            _transferrer,
-            _recipient,
-            runtime.toHoldersLotteryRuntime(),
-            runtimeCounter
-        );
 
         _donationsLottery(_transferrer, _recipient, _amount, runtime.toDonationLotteryRuntime());
 
