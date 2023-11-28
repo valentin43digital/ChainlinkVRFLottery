@@ -47,7 +47,7 @@ async function main() {
         donationConversionThreshold: ethers.utils.parseEther("1000"),
     }
 
-    const LotteryTokenFactory = await ethers.getContractFactory("LayerZ")
+    const LotteryTokenFactory = await ethers.getContractFactory("TestZ")
     const token = await LotteryTokenFactory.deploy(
         config.MINT_TO,
         config.VRF_COORDINATOR_ADDRESS,

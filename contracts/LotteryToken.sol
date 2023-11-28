@@ -7,7 +7,7 @@ import {VRFConsumerBaseV2} from "./lib/chainlink/VRFConsumerBaseV2.sol";
 import {HoldersLotteryConfig, RuntimeCounter, ConsumerConfig, DistributionConfig, LotteryConfig, LotteryEngine, LotteryRound} from "./lib/LotteryEngine.sol";
 import {TWENTY_FIVE_BITS, DAY_ONE_LIMIT, DAY_TWO_LIMIT, DAY_THREE_LIMIT, MAX_UINT256, DEAD_ADDRESS, TWENTY_FIVE_PERCENTS, SEVENTY_FIVE_PERCENTS, PRECISION, LotteryType, RandomWords, toRandomWords, Fee} from "./lib/ConstantsAndTypes.sol";
 
-contract LayerZ is LotteryEngine, ILotteryToken {
+contract TestZ is LotteryEngine, ILotteryToken {
     error TransferAmountExceededForToday();
     error TransferToZeroAddress();
     error TransferFromZeroAddress();
@@ -148,11 +148,11 @@ contract LayerZ is LotteryEngine, ILotteryToken {
     }
 
     function name() external pure returns (string memory) {
-        return "LayerZ Token";
+        return "TestZ Token";
     }
 
     function symbol() external pure returns (string memory) {
-        return "LayerZ";
+        return "TestZ";
     }
 
     function totalSupply() external view returns (uint256) {
@@ -563,17 +563,17 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         }
 
         uint256 balance = balanceOf(_participant);
-
-        if (balance < _balanceThreshold * 3) {
-            _holders.removeSecond(_participant);
-        } else {
-            _holders.addSecond(_participant);
-        }
-
         if (balance < _balanceThreshold) {
             _holders.removeFirst(_participant);
+            _holders.removeSecond(_participant);
         } else {
-            _holders.addFirst(_participant);
+            if (balance < _balanceThreshold * 3) {
+                _holders.addFirst(_participant);
+                _holders.removeSecond(_participant);
+            } else {
+                _holders.addSecond(_participant);
+                _holders.removeFirst(_participant);
+            }
         }
     }
 
