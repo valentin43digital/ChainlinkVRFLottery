@@ -1,7 +1,6 @@
 const ROUTER_ADDRESS = "0xD99D1c33F9fC3444f8101754aBC46c52416550D1";
 const COORDINATOR_ADDRESS = "0x6A2AAd07396B36Fe02a22b33cf443582f682c82f";
 const MINT_TO = "0xb331ED7dc039Ee25ab9acf9D1F665E9400fc3fD1";
-const DONATE_TO = "0x5cf496C69BBEe8a9beB05B17Aa01e759487F71A3";
 const DEV = "0x5B81163707dEb08e0C7Ec4344E3FEF8AE6694b25";
 const TREASURY = "0x7fb1850DAA5A020724f038f78f5ACE91Cf0789Cf";
 const JACKPOT_POOL = "0x0d49e6dd64e0b7d0F216c0Ae0ffa0E07800d8734";
@@ -43,7 +42,6 @@ const LotteryConfig = {
   holdersLotteryEnabled: true,
   holdersLotteryTxTrigger: 6,
   holdersLotteryMinPercent: 1,
-  donationAddress: DONATE_TO,
   donationsLotteryEnabled: true,
   minimumDonationEntries: 2,
   minimalDonation: "1000000000000000000000",

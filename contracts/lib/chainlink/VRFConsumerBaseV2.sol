@@ -119,18 +119,12 @@ abstract contract VRFConsumerBaseV2 {
      * @param requestId The Id initially returned by requestRandomness
      * @param randomWords the VRF output expanded to the requested number of words
      */
-    function _fulfillRandomWords(
-        uint256 requestId,
-        uint256[] memory randomWords
-    ) internal virtual;
+    function _fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal virtual;
 
     // rawFulfillRandomness is called by VRFCoordinator when it receives a valid VRF
     // proof. rawFulfillRandomness then calls fulfillRandomness, after validating
     // the origin of the call
-    function rawFulfillRandomWords(
-        uint256 requestId,
-        uint256[] memory randomWords
-    ) external {
+    function rawFulfillRandomWords(uint256 requestId, uint256[] memory randomWords) external {
         // if (msg.sender != VRF_COORDINATOR) {
         // revert OnlyCoordinatorCanFulfill(msg.sender, VRF_COORDINATOR);
         // }

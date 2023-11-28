@@ -41,7 +41,6 @@ async function main() {
         holdersLotteryEnabled: true,
         holdersLotteryTxTrigger: 6, // TODO: use real value for mainnet
         holdersLotteryMinPercent: 1, // TODO: use real value for mainnet
-        donationAddress: config.DONATE_TO,
         donationsLotteryEnabled: true,
         minimumDonationEntries: 2, // TODO: use real value for mainnet
         minimalDonation: ethers.utils.parseEther("1000"),

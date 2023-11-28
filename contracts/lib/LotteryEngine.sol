@@ -14,8 +14,7 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 
     uint256 internal _donationRound;
     mapping(address => uint256) private _nextDonationTimestamp;
-    mapping(uint256 => mapping(address => uint256[]))
-        internal _donatorTicketIdxs;
+    mapping(uint256 => mapping(address => uint256[])) internal _donatorTicketIdxs;
     mapping(uint256 => mapping(address => bool)) private _hasDonated;
     address[] internal _donators;
     uint256 internal _uniqueDonatorsCount;
@@ -29,19 +28,9 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
         ConsumerConfig memory _consumerConfig,
         DistributionConfig memory _distributionConfig,
         LotteryConfig memory _lotteryConfig
-    )
-        PancakeAdapter(
-            _routerAddress,
-            _fee,
-            _consumerConfig,
-            _distributionConfig,
-            _lotteryConfig
-        )
-    {}
+    ) PancakeAdapter(_routerAddress, _fee, _consumerConfig, _distributionConfig, _lotteryConfig) {}
 
-    function _requestRandomWords(
-        uint32 _wordsAmount
-    ) internal returns (uint256) {
+    function _requestRandomWords(uint32 _wordsAmount) internal returns (uint256) {
         return
             VRFCoordinatorV2Interface(VRF_COORDINATOR).requestRandomWords(
                 _consumerConfig.gasPriceKey,
@@ -82,9 +71,7 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
         uint256 requestId = _requestRandomWords(2);
         LotteryRound storage round = rounds[requestId];
         round.lotteryType = LotteryType.JACKPOT;
-        round.jackpotEntry = hundreds >= 10
-            ? JackpotEntry.USD_1000
-            : JackpotEntry(uint8(hundreds));
+        round.jackpotEntry = hundreds >= 10 ? JackpotEntry.USD_1000 : JackpotEntry(uint8(hundreds));
         round.jackpotPlayer = _recipient;
     }
 
@@ -95,10 +82,7 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
         // increment tx counter.
         _runtimeCounter.increaseHoldersLotteryCounter();
 
-        if (
-            _runtimeCounter.holdersLotteryTxCounter() <
-            _runtime.lotteryTxTrigger
-        ) {
+        if (_runtimeCounter.holdersLotteryTxCounter() < _runtime.lotteryTxTrigger) {
             return;
         }
 
@@ -114,6 +98,7 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
     function _donationsLottery(
         address _transferrer,
         address _recipient,
+        address donationLotteryPrizePoolAddress,
         uint256 _amount,
         DonationLotteryConfig memory _runtime
     ) internal {
@@ -121,22 +106,15 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
             return;
         }
         // if this transfer is a donation, add a ticket for transferrer.
-        if (
-            _recipient == _runtime.donationAddress &&
-            _amount >= _runtime.minimalDonation
-        ) {
+        if (_recipient == donationLotteryPrizePoolAddress && _amount >= _runtime.minimalDonation) {
             if (block.timestamp > _nextDonationTimestamp[_transferrer]) {
                 _donators.push(_transferrer);
-                _donatorTicketIdxs[_donationRound][_transferrer].push(
-                    _donators.length
-                );
+                _donatorTicketIdxs[_donationRound][_transferrer].push(_donators.length);
                 if (!_hasDonated[_donationRound][_transferrer]) {
                     _hasDonated[_donationRound][_transferrer] = true;
                     _uniqueDonatorsCount++;
                 }
-                _nextDonationTimestamp[_transferrer] =
-                    block.timestamp +
-                    DONATION_TICKET_TIMEOUT;
+                _nextDonationTimestamp[_transferrer] = block.timestamp + DONATION_TICKET_TIMEOUT;
             }
         }
 
@@ -193,9 +171,7 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
         return _holders.allTickets();
     }
 
-    function holdersLotteryTicketsAmountPerHolder(
-        address _holder
-    ) external view returns (uint256) {
+    function holdersLotteryTicketsAmountPerHolder(address _holder) external view returns (uint256) {
         return _holders.getNumberOfTickets(_holder);
     }
 

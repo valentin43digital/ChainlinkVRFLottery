@@ -24,24 +24,13 @@ contract linkERC20Basic {
  * @dev see https://github.com/ethereum/EIPs/issues/20
  */
 contract linkERC20 is linkERC20Basic {
-    function allowance(
-        address owner,
-        address spender
-    ) constant returns (uint256);
+    function allowance(address owner, address spender) constant returns (uint256);
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 value
-    ) returns (bool);
+    function transferFrom(address from, address to, uint256 value) returns (bool);
 
     function approve(address spender, uint256 value) returns (bool);
 
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 value
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
 contract ERC677Receiver {
@@ -49,18 +38,9 @@ contract ERC677Receiver {
 }
 
 contract ERC677 is linkERC20 {
-    function transferAndCall(
-        address to,
-        uint value,
-        bytes data
-    ) returns (bool success);
+    function transferAndCall(address to, uint value, bytes data) returns (bool success);
 
-    event Transfer(
-        address indexed from,
-        address indexed to,
-        uint value,
-        bytes data
-    );
+    event Transfer(address indexed from, address indexed to, uint value, bytes data);
 }
 
 contract ERC677Token is ERC677 {
@@ -70,11 +50,7 @@ contract ERC677Token is ERC677 {
      * @param _value The amount to be transferred.
      * @param _data The extra data to be passed to the receiving contract.
      */
-    function transferAndCall(
-        address _to,
-        uint _value,
-        bytes _data
-    ) public returns (bool success) {
+    function transferAndCall(address _to, uint _value, bytes _data) public returns (bool success) {
         super.transfer(_to, _value);
         Transfer(msg.sender, _to, _value, _data);
         if (isContract(_to)) {
@@ -176,11 +152,7 @@ contract linkStandardToken is linkERC20, linkBasicToken {
      * @param _to address The address which you want to transfer to
      * @param _value uint256 the amount of tokens to be transferred
      */
-    function transferFrom(
-        address _from,
-        address _to,
-        uint256 _value
-    ) returns (bool) {
+    function transferFrom(address _from, address _to, uint256 _value) returns (bool) {
         var _allowance = allowed[_from][msg.sender];
 
         // Check is not needed because sub(_allowance, _value) will already throw if this condition is not met
@@ -210,10 +182,7 @@ contract linkStandardToken is linkERC20, linkBasicToken {
      * @param _spender address The address which will spend the funds.
      * @return A uint256 specifying the amount of tokens still available for the spender.
      */
-    function allowance(
-        address _owner,
-        address _spender
-    ) constant returns (uint256 remaining) {
+    function allowance(address _owner, address _spender) constant returns (uint256 remaining) {
         return allowed[_owner][_spender];
     }
 
@@ -223,21 +192,13 @@ contract linkStandardToken is linkERC20, linkBasicToken {
      * the first transaction is mined)
      * From MonolithDAO Token.sol
      */
-    function increaseApproval(
-        address _spender,
-        uint _addedValue
-    ) returns (bool success) {
-        allowed[msg.sender][_spender] = allowed[msg.sender][_spender].add(
-            _addedValue
-        );
+    function increaseApproval(address _spender, uint _addedValue) returns (bool success) {
+        allowed[msg.sender][_spender] = allowed[msg.sender][_spender].add(_addedValue);
         Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
         return true;
     }
 
-    function decreaseApproval(
-        address _spender,
-        uint _subtractedValue
-    ) returns (bool success) {
+    function decreaseApproval(address _spender, uint _subtractedValue) returns (bool success) {
         uint oldValue = allowed[msg.sender][_spender];
         if (_subtractedValue > oldValue) {
             allowed[msg.sender][_spender] = 0;
@@ -278,10 +239,7 @@ contract LinkToken is linkStandardToken, ERC677Token {
      * @param _to The address to transfer to.
      * @param _value The amount to be transferred.
      */
-    function transfer(
-        address _to,
-        uint _value
-    ) public validRecipient(_to) returns (bool success) {
+    function transfer(address _to, uint _value) public validRecipient(_to) returns (bool success) {
         return super.transfer(_to, _value);
     }
 

@@ -84,7 +84,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
     mapping(address => mapping(address => uint256)) private _allowances;
 
     mapping(address => bool) public whitelist;
-    address[] private _excluded;
+    address[] private _excludedFromReward;
 
     uint256 private _tTotal = 10_000_000_000 * 1e18;
 
@@ -132,7 +132,6 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         //exclude owner and this contract from fee
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
-        _isExcludedFromFee[_lConfig.donationAddress] = true;
         _isExcludedFromFee[_mintSupplyTo] = true;
         _isExcludedFromFee[_dConfig.holderLotteryPrizePoolAddress] = true;
         _isExcludedFromFee[_dConfig.smashTimeLotteryPrizePoolAddress] = true;
@@ -141,7 +140,6 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         _isExcludedFromFee[_dConfig.teamFeesAccumulationAddress] = true;
         _isExcludedFromFee[_dConfig.treasuryAddress] = true;
         _isExcludedFromFee[_dConfig.treasuryFeesAccumulationAddress] = true;
-        _isExcludedFromFee[_lotteryConfig.donationAddress] = true;
         _isExcludedFromFee[DEAD_ADDRESS] = true;
         _isExcludedFromFee[PANCAKE_PAIR] = true;
         _isExcludedFromFee[address(PANCAKE_ROUTER)] = true;
@@ -417,15 +415,15 @@ contract LayerZ is LotteryEngine, ILotteryToken {
     function _getCurrentSupply() private view returns (uint256, uint256) {
         uint256 rSupply = _rTotal;
         uint256 tSupply = _tTotal;
-        for (uint256 i = 0; i < _excluded.length; i++) {
-            if (_rOwned[_excluded[i]] > rSupply) {
+        for (uint256 i = 0; i < _excludedFromReward.length; i++) {
+            if (_rOwned[_excludedFromReward[i]] > rSupply) {
                 return (_rTotal, _tTotal);
             }
-            if (_tOwned[_excluded[i]] > tSupply) {
+            if (_tOwned[_excludedFromReward[i]] > tSupply) {
                 return (_rTotal, _tTotal);
             }
-            rSupply = rSupply - _rOwned[_excluded[i]];
-            tSupply = tSupply - _tOwned[_excluded[i]];
+            rSupply = rSupply - _rOwned[_excludedFromReward[i]];
+            tSupply = tSupply - _tOwned[_excludedFromReward[i]];
         }
         if (rSupply < _rTotal / _tTotal) {
             return (_rTotal, _tTotal);
@@ -650,7 +648,13 @@ contract LayerZ is LotteryEngine, ILotteryToken {
             _swapTokensForBNB(conversionAmount, donationLotteryPrizePoolAddress);
         }
 
-        _donationsLottery(_transferrer, _recipient, _amount, runtime.toDonationLotteryRuntime());
+        _donationsLottery(
+            _transferrer,
+            _recipient,
+            donationLotteryPrizePoolAddress,
+            _amount,
+            runtime.toDonationLotteryRuntime()
+        );
 
         _counter = runtimeCounter.store();
     }
@@ -900,7 +904,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
     }
 
     function donate(uint256 _amount) external {
-        _transfer(msg.sender, _lotteryConfig.donationAddress, _amount);
+        _transfer(msg.sender, donationLotteryPrizePoolAddress, _amount);
     }
 
     function updateHolderList(address[] calldata holdersToCheck) external onlyOwner {
@@ -922,19 +926,19 @@ contract LayerZ is LotteryEngine, ILotteryToken {
             _tOwned[account] = tokenFromReflection(_rOwned[account]);
         }
         _isExcludedFromReward[account] = true;
-        _excluded.push(account);
+        _excludedFromReward.push(account);
     }
 
     function includeInReward(address account) external onlyOwner {
         if (!_isExcludedFromReward[account]) {
             revert AccountAlreadyIncluded();
         }
-        for (uint256 i = 0; i < _excluded.length; i++) {
-            if (_excluded[i] == account) {
-                _excluded[i] = _excluded[_excluded.length - 1];
+        for (uint256 i = 0; i < _excludedFromReward.length; i++) {
+            if (_excludedFromReward[i] == account) {
+                _excludedFromReward[i] = _excludedFromReward[_excludedFromReward.length - 1];
                 _tOwned[account] = 0;
                 _isExcludedFromReward[account] = false;
-                _excluded.pop();
+                _excludedFromReward.pop();
                 break;
             }
         }

@@ -22,13 +22,10 @@ abstract contract ProtocolConfig {
 
     constructor(DistributionConfig memory _config) {
         holderLotteryPrizePoolAddress = _config.holderLotteryPrizePoolAddress;
-        smashTimeLotteryPrizePoolAddress = _config
-            .smashTimeLotteryPrizePoolAddress;
-        donationLotteryPrizePoolAddress = _config
-            .donationLotteryPrizePoolAddress;
+        smashTimeLotteryPrizePoolAddress = _config.smashTimeLotteryPrizePoolAddress;
+        donationLotteryPrizePoolAddress = _config.donationLotteryPrizePoolAddress;
         teamFeesAccumulationAddress = _config.teamFeesAccumulationAddress;
-        treasuryFeesAccumulationAddress = _config
-            .treasuryFeesAccumulationAddress;
+        treasuryFeesAccumulationAddress = _config.treasuryFeesAccumulationAddress;
         teamAddress = _config.teamAddress;
         treasuryAddress = _config.treasuryAddress;
         _fees = _config.compact();
@@ -38,9 +35,7 @@ abstract contract ProtocolConfig {
         holderLotteryPrizePoolAddress = _newAddress;
     }
 
-    function _setSmashTimeLotteryPrizePoolAddress(
-        address _newAddress
-    ) internal {
+    function _setSmashTimeLotteryPrizePoolAddress(address _newAddress) internal {
         smashTimeLotteryPrizePoolAddress = _newAddress;
     }
 

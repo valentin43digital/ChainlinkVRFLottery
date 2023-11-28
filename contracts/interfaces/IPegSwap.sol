@@ -3,11 +3,7 @@
 pragma solidity >=0.6.0;
 
 interface IPegSwap {
-    event LiquidityUpdated(
-        uint256 amount,
-        address indexed source,
-        address indexed target
-    );
+    event LiquidityUpdated(uint256 amount, address indexed source, address indexed target);
     event TokensSwapped(
         uint256 amount,
         address indexed source,
@@ -24,11 +20,7 @@ interface IPegSwap {
      * @param source the token that can be swapped for what is being deposited
      * @param target the token that can is being deposited for swapping
      */
-    function addLiquidity(
-        uint256 amount,
-        address source,
-        address target
-    ) external;
+    function addLiquidity(uint256 amount, address source, address target) external;
 
     /**
      * @notice withdraws tokens from the target of a swap pair.
@@ -37,11 +29,7 @@ interface IPegSwap {
      * @param source the token that can be swapped for what is being removed
      * @param target the token that can is being withdrawn from swapping
      */
-    function removeLiquidity(
-        uint256 amount,
-        address source,
-        address target
-    ) external;
+    function removeLiquidity(uint256 amount, address source, address target) external;
 
     /**
      * @notice exchanges the source token for target token
