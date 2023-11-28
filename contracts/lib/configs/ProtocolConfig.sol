@@ -16,7 +16,7 @@ abstract contract ProtocolConfig {
     address public treasuryAddress;
 
     mapping(address => bool) internal _isExcludedFromFee;
-    mapping(address => bool) internal _isExcluded;
+    mapping(address => bool) internal _isExcludedFromReward;
 
     Fee internal _fees;
 

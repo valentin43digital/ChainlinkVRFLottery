@@ -162,7 +162,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
     }
 
     function balanceOf(address account) public view returns (uint256) {
-        if (_isExcluded[account]) {
+        if (_isExcludedFromReward[account]) {
             return _tOwned[account];
         }
         return tokenFromReflection(_rOwned[account]);
@@ -237,7 +237,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
     }
 
     function deliver(uint256 tAmount) external {
-        if (_isExcluded[msg.sender]) {
+        if (_isExcludedFromReward[msg.sender]) {
             revert ExcludedAccountCanNotCall();
         }
         (RInfo memory rr, ) = _getValues(tAmount, true);
@@ -435,7 +435,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
 
     function _takeLiquidity(uint256 rLiquidity, uint256 tLiquidity) private {
         _rOwned[address(this)] = _rOwned[address(this)] + rLiquidity;
-        if (_isExcluded[address(this)])
+        if (_isExcludedFromReward[address(this)])
             _tOwned[address(this)] = _tOwned[address(this)] + tLiquidity;
     }
 
@@ -557,7 +557,7 @@ contract LayerZ is LotteryEngine, ILotteryToken {
             return;
         }
 
-        if (_isExcluded[_participant]) {
+        if (_isExcludedFromReward[_participant]) {
             return;
         }
         if (_isExcludedFromFee[_participant]) {
@@ -679,8 +679,8 @@ contract LayerZ is LotteryEngine, ILotteryToken {
         uint256 amount,
         bool takeFee
     ) private {
-        bool senderExcluded = _isExcluded[sender];
-        bool recipientExcluded = _isExcluded[recipient];
+        bool senderExcluded = _isExcludedFromReward[sender];
+        bool recipientExcluded = _isExcludedFromReward[recipient];
 
         if (!senderExcluded) {
             if (!recipientExcluded) {
@@ -914,26 +914,26 @@ contract LayerZ is LotteryEngine, ILotteryToken {
     }
 
     function excludeFromReward(address account) public onlyOwner {
-        if (_isExcluded[account]) {
+        if (_isExcludedFromReward[account]) {
             revert AccountAlreadyExcluded();
         }
 
         if (_rOwned[account] > 0) {
             _tOwned[account] = tokenFromReflection(_rOwned[account]);
         }
-        _isExcluded[account] = true;
+        _isExcludedFromReward[account] = true;
         _excluded.push(account);
     }
 
     function includeInReward(address account) external onlyOwner {
-        if (!_isExcluded[account]) {
+        if (!_isExcludedFromReward[account]) {
             revert AccountAlreadyIncluded();
         }
         for (uint256 i = 0; i < _excluded.length; i++) {
             if (_excluded[i] == account) {
                 _excluded[i] = _excluded[_excluded.length - 1];
                 _tOwned[account] = 0;
-                _isExcluded[account] = false;
+                _isExcludedFromReward[account] = false;
                 _excluded.pop();
                 break;
             }

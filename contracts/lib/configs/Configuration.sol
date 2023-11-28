@@ -188,7 +188,7 @@ abstract contract Configuration is
     }
 
     function isExcludedFromReward(address account) external view returns (bool) {
-        return _isExcluded[account];
+        return _isExcludedFromReward[account];
     }
 
     function smashTimeLotteryEnabled() external view returns (bool) {
