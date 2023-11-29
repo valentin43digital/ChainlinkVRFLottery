@@ -17,7 +17,7 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
     mapping(uint256 => mapping(address => uint256[])) internal _donatorTicketIdxs;
     mapping(uint256 => mapping(address => bool)) private _hasDonated;
     address[] internal _donators;
-    uint256 internal _uniqueDonatorsCount;
+    uint256 internal _uniqueDonatorsCounter;
     Holders internal _holders;
 
     Counter internal _counter;
@@ -69,10 +69,11 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
         }
 
         uint256 requestId = _requestRandomWords(2);
-        LotteryRound storage round = rounds[requestId];
-        round.lotteryType = LotteryType.JACKPOT;
-        round.jackpotEntry = hundreds >= 10 ? JackpotEntry.USD_1000 : JackpotEntry(uint8(hundreds));
-        round.jackpotPlayer = _recipient;
+        rounds[requestId].lotteryType = LotteryType.JACKPOT;
+        rounds[requestId].jackpotEntry = hundreds >= 10
+            ? JackpotEntry.USD_1000
+            : JackpotEntry(uint8(hundreds));
+        rounds[requestId].jackpotPlayer = _recipient;
     }
 
     function _triggerHoldersLottery(
@@ -107,18 +108,19 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
         // if this transfer is a donation, add a ticket for transferrer.
         if (_recipient == _runtime.donationAddress && _amount >= _runtime.minimalDonation) {
             if (block.timestamp > _nextDonationTimestamp[_transferrer]) {
+                uint256 length = _donators.length;
                 _donators.push(_transferrer);
-                _donatorTicketIdxs[_donationRound][_transferrer].push(_donators.length);
+                _donatorTicketIdxs[_donationRound][_transferrer].push(length);
                 if (!_hasDonated[_donationRound][_transferrer]) {
                     _hasDonated[_donationRound][_transferrer] = true;
-                    _uniqueDonatorsCount++;
+                    _uniqueDonatorsCounter++;
                 }
                 _nextDonationTimestamp[_transferrer] = block.timestamp + DONATION_TICKET_TIMEOUT;
             }
         }
 
         // check if minimum donation entries requirement is met.
-        if (_uniqueDonatorsCount < _runtime.minimumEntries) {
+        if (_uniqueDonatorsCounter < _runtime.minimumEntries) {
             return;
         }
 
@@ -160,14 +162,14 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
                 _donatorTicketIdxs[round][recipient].push(idx);
                 if (!_hasDonated[_donationRound][recipient]) {
                     _hasDonated[_donationRound][recipient] = true;
-                    _uniqueDonatorsCount++;
+                    _uniqueDonatorsCounter++;
                 }
             }
         }
     }
 
-    function holdersLotteryTickets() external view returns (address[] memory) {
-        return _holders.allTickets();
+    function holdersLotteryHolders() external view returns (address[] memory) {
+        return _holders.allHolders();
     }
 
     function holdersLotteryTicketsAmountPerHolder(address _holder) external view returns (uint256) {

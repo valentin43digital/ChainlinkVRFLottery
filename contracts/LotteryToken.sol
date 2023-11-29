@@ -226,9 +226,7 @@ contract TestZ is LotteryEngine, ILotteryToken {
         if (currentAllowance < subtractedValue) {
             revert CanNotDecreaseAllowance();
         }
-        unchecked {
-            _allowances[msg.sender][spender] = currentAllowance - subtractedValue;
-        }
+        _allowances[msg.sender][spender] = currentAllowance - subtractedValue;
         return true;
     }
 
@@ -291,20 +289,13 @@ contract TestZ is LotteryEngine, ILotteryToken {
             tt.tHolderPrizeFee +
             tt.tDonationLotteryPrizeFee;
 
-        _reflectFeeToAddresses(rr);
-        _emitTransferEvents(tt);
-    }
-
-    function _reflectFeeToAddresses(RInfo memory rr) private {
         _rOwned[smashTimeLotteryPrizePoolAddress] += rr.rSmashTimePrizeFee;
         _rOwned[holderLotteryPrizePoolAddress] += rr.rHolderPrizeFee;
         _rOwned[donationLotteryPrizePoolAddress] += rr.rDonationLotteryPrizeFee;
         _rOwned[teamFeesAccumulationAddress] += rr.rDevFundFee;
         _rOwned[treasuryFeesAccumulationAddress] += rr.rTreasuryFee;
         _rOwned[DEAD_ADDRESS] += rr.rBurnFee;
-    }
 
-    function _emitTransferEvents(TInfo memory tt) private {
         address[6] memory addresses = [
             holderLotteryPrizePoolAddress,
             smashTimeLotteryPrizePoolAddress,
@@ -418,10 +409,10 @@ contract TestZ is LotteryEngine, ILotteryToken {
         uint256 rSupply = _rTotal;
         uint256 tSupply = _tTotal;
         for (uint256 i = 0; i < _excludedFromReward.length; i++) {
-            if (_rOwned[_excludedFromReward[i]] > rSupply) {
-                return (_rTotal, _tTotal);
-            }
-            if (_tOwned[_excludedFromReward[i]] > tSupply) {
+            if (
+                _rOwned[_excludedFromReward[i]] > rSupply ||
+                _tOwned[_excludedFromReward[i]] > tSupply
+            ) {
                 return (_rTotal, _tTotal);
             }
             rSupply = rSupply - _rOwned[_excludedFromReward[i]];
@@ -446,9 +437,7 @@ contract TestZ is LotteryEngine, ILotteryToken {
 
     function _antiAbuse(address from, address to, uint256 amount) private view {
         // If owner, skip checks
-        if (from == owner()) return;
-
-        if (to == owner()) return;
+        if (from == owner() || to == owner()) return;
 
         (, uint256 tSupply) = _getCurrentSupply();
         uint256 lastUserBalance = balanceOf(to) +
@@ -509,8 +498,8 @@ contract TestZ is LotteryEngine, ILotteryToken {
         }
         //indicates if fee should be deducted from transfer
         bool takeFee = !_isExcludedFromFee[from] && !_isExcludedFromFee[to];
-        _lotteryOnTransfer(from, to, amount, takeFee);
         // process transfer and lotteries
+        _lotteryOnTransfer(from, to, amount, takeFee);
         if (_lock == SwapStatus.Open) _distributeFees();
     }
 
@@ -818,6 +807,18 @@ contract TestZ is LotteryEngine, ILotteryToken {
         return (balanceOf(smashTimeLotteryPrizePoolAddress) * SEVENTY_FIVE_PERCENTS) / PRECISION;
     }
 
+    function _seedTicketsArray(
+        address[100] memory _tickets,
+        uint256 _index,
+        address _player
+    ) internal pure {
+        if (_tickets[_index] == _player) {
+            _seedTicketsArray(_tickets, _index + 1, _player);
+        } else {
+            _tickets[_index] = _player;
+        }
+    }
+
     function _finishSmashTimeLottery(
         LotteryRound storage _round,
         RandomWords memory _random
@@ -827,27 +828,26 @@ contract TestZ is LotteryEngine, ILotteryToken {
 
         for (uint256 i = 0; i < uint8(_round.jackpotEntry); ) {
             uint256 shift = (i * TWENTY_FIVE_BITS);
-            uint256 idx = (_random.second >> shift) % 100;
-
-            if (tickets[idx] != player) {
-                tickets[idx] = player;
-            } else {
-                // Handle the case where the ticket at idx is already set to the player
-                // You can decide how to proceed: skip, find next empty slot, etc.
-                // For now, let's just increment idx and loop it back if it exceeds 99.
-                idx = (idx + 1) % 100;
-                tickets[idx] = player;
+            uint256 idx = (_random.second >> shift);
+            assembly {
+                idx := mod(idx, 100)
             }
-
-            ++i;
+            _seedTicketsArray(tickets, idx, player);
+            unchecked {
+                ++i;
+            }
         }
 
-        uint256 winnerIdx = uint256(_random.first) % 100;
+        uint256 winnerIdx;
+        assembly {
+            winnerIdx := mod(mload(_random), 100)
+        }
 
         if (tickets[winnerIdx] == player) {
             uint256 untaxedPrize = _calculateSmashTimeLotteryPrize();
             uint256 tax = (untaxedPrize * smashTimeLotteryPrizeFeePercent()) / maxBuyPercent;
             accruedLotteryTax += tax;
+            _wBNB.transferFrom(donationLotteryPrizePoolAddress, address(this), tax);
             uint256 prize = untaxedPrize - tax;
             _wBNB.transferFrom(donationLotteryPrizePoolAddress, player, prize);
 
@@ -871,7 +871,7 @@ contract TestZ is LotteryEngine, ILotteryToken {
         assembly {
             winnerIdx := mod(_random, holdersLength)
         }
-        address winner = _holders.allTickets()[winnerIdx];
+        address winner = _holders.allHolders()[winnerIdx];
         uint256 prize = _calculateHoldersLotteryPrize();
 
         _tokenTransfer(holderLotteryPrizePoolAddress, winner, prize, false);
@@ -901,7 +901,7 @@ contract TestZ is LotteryEngine, ILotteryToken {
         _round.lotteryType = LotteryType.FINISHED_DONATION;
 
         delete _donators;
-        _uniqueDonatorsCount = 0;
+        _uniqueDonatorsCounter = 0;
         _donationRound += 1;
     }
 

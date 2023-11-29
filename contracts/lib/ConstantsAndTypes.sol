@@ -246,7 +246,9 @@ library TypesHelpers {
     }
 
     function resetHoldersLotteryCounter(RuntimeCounter memory _counter) internal pure {
-        _counter.counter = Counter.wrap(Counter.unwrap(_counter.counter) & ~uint128(0));
+        uint256 raw = Counter.unwrap(_counter.counter) >> 128;
+        raw <<= 128;
+        _counter.counter = Counter.wrap(raw);
     }
 
     function counterMemPtr(
@@ -255,7 +257,7 @@ library TypesHelpers {
         runtimeCounter.counter = _counter;
     }
 
-    function allTickets(Holders storage _holders) internal view returns (address[] memory) {
+    function allHolders(Holders storage _holders) internal view returns (address[] memory) {
         address[] memory merged = new address[](_holders.first.length + _holders.second.length);
         for (uint256 i = 0; i < merged.length; ++i) {
             merged[i] = i < _holders.first.length
@@ -360,9 +362,8 @@ library TypesHelpers {
                 tickets += 1;
             }
         }
-
         // Check if the holder is in the second array
-        if (_holders.idx[_holder][1] > 0) {
+        else if (_holders.idx[_holder][1] > 0) {
             // Subtract 1 because array indices start from 0, but we stored starting from 1
             uint256 indexInSecond = _holders.idx[_holder][1] - 1;
             if (

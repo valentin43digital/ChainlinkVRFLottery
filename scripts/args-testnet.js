@@ -39,14 +39,14 @@ const ProtocolConfig = {
 
 const LotteryConfig = {
   smashTimeLotteryEnabled: false,
-  smashTimeLotteryConversionThreshold: "10000000000000000000",
+  smashTimeLotteryConversionThreshold: "100000000000000000000",
   holdersLotteryEnabled: true,
   holdersLotteryTxTrigger: 10,
   holdersLotteryMinPercent: 1,
   donationAddress: DONATE_TO,
   donationsLotteryEnabled: true,
   minimumDonationEntries: 2,
-  minimalDonation: "100000000000000000000",
+  minimalDonation: "1000000000000000000000",
   donationConversionThreshold: "100000000000000000000",
 };
 
