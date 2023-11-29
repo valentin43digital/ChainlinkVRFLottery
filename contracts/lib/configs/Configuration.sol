@@ -123,6 +123,10 @@ abstract contract Configuration is
         _setHoldersLotteryMinPercent(_minPercent);
     }
 
+    function setDonationAddress(address _donationAddress) external onlyOwner {
+        _setDonationAddress(_donationAddress);
+    }
+
     function setMinimalDonation(uint256 _minimalDonation) external onlyOwner {
         _setMinimanDonation(_minimalDonation);
     }
@@ -205,6 +209,10 @@ abstract contract Configuration is
 
     function holdersLotteryMinPercent() external view returns (uint256) {
         return _lotteryConfig.holdersLotteryMinPercent;
+    }
+
+    function donationAddress() external view returns (address) {
+        return _lotteryConfig.donationAddress;
     }
 
     function donationsLotteryEnabled() external view returns (bool) {

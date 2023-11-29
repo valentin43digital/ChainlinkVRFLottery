@@ -132,6 +132,7 @@ contract TestZ is LotteryEngine, ILotteryToken {
         //exclude owner and this contract from fee
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
+        _isExcludedFromFee[_lConfig.donationAddress] = true;
         _isExcludedFromFee[_mintSupplyTo] = true;
         _isExcludedFromFee[_dConfig.holderLotteryPrizePoolAddress] = true;
         _isExcludedFromFee[_dConfig.smashTimeLotteryPrizePoolAddress] = true;
@@ -140,6 +141,7 @@ contract TestZ is LotteryEngine, ILotteryToken {
         _isExcludedFromFee[_dConfig.teamFeesAccumulationAddress] = true;
         _isExcludedFromFee[_dConfig.treasuryAddress] = true;
         _isExcludedFromFee[_dConfig.treasuryFeesAccumulationAddress] = true;
+        _isExcludedFromFee[_lotteryConfig.donationAddress] = true;
         _isExcludedFromFee[DEAD_ADDRESS] = true;
         _isExcludedFromFee[PANCAKE_PAIR] = true;
         _isExcludedFromFee[address(PANCAKE_ROUTER)] = true;
@@ -649,13 +651,7 @@ contract TestZ is LotteryEngine, ILotteryToken {
             _swapTokensForBNB(conversionAmount, donationLotteryPrizePoolAddress);
         }
 
-        _donationsLottery(
-            _transferrer,
-            _recipient,
-            donationLotteryPrizePoolAddress,
-            _amount,
-            runtime.toDonationLotteryRuntime()
-        );
+        _donationsLottery(_transferrer, _recipient, _amount, runtime.toDonationLotteryRuntime());
 
         _counter = runtimeCounter.store();
     }
@@ -907,7 +903,7 @@ contract TestZ is LotteryEngine, ILotteryToken {
     }
 
     function donate(uint256 _amount) external {
-        _transfer(msg.sender, donationLotteryPrizePoolAddress, _amount);
+        _transfer(msg.sender, _lotteryConfig.donationAddress, _amount);
     }
 
     function updateHolderList(address[] calldata holdersToCheck) external onlyOwner {

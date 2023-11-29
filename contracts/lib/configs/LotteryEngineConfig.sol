@@ -30,6 +30,10 @@ abstract contract LotteryEngineConfig {
         _lotteryConfig.holdersLotteryMinPercent = _minPercent;
     }
 
+    function _setDonationAddress(address _donationAddress) internal {
+        _lotteryConfig.donationAddress = _donationAddress;
+    }
+
     function _setMinimanDonation(uint256 _minimalDonation) internal {
         _lotteryConfig.minimalDonation = _minimalDonation;
     }

@@ -98,7 +98,6 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
     function _donationsLottery(
         address _transferrer,
         address _recipient,
-        address donationLotteryPrizePoolAddress,
         uint256 _amount,
         DonationLotteryConfig memory _runtime
     ) internal {
@@ -106,7 +105,7 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
             return;
         }
         // if this transfer is a donation, add a ticket for transferrer.
-        if (_recipient == donationLotteryPrizePoolAddress && _amount >= _runtime.minimalDonation) {
+        if (_recipient == _runtime.donationAddress && _amount >= _runtime.minimalDonation) {
             if (block.timestamp > _nextDonationTimestamp[_transferrer]) {
                 _donators.push(_transferrer);
                 _donatorTicketIdxs[_donationRound][_transferrer].push(_donators.length);
