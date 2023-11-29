@@ -273,26 +273,22 @@ library TypesHelpers {
     }
 
     function removeFirst(Holders storage _holders, address _holder) internal {
-        // If the first index of _holder is 0 or the array is empty, no operation is needed
-        if (_holders.idx[_holder].length == 0) {
-            return;
-        }
-        if (_holders.first.length == 0) {
+        uint256 holderIdx = _holders.idx[_holder][0];
+
+        if (holderIdx == 0) {
             return;
         }
 
-        uint256 holderIdx = _holders.idx[_holder][0];
         uint256 arrayIdx = holderIdx - 1;
-        address[] storage firstArray = _holders.first; // Local storage reference
-        uint256 lastIdx = firstArray.length - 1;
+        uint256 lastIdx = _holders.first.length - 1;
 
         if (arrayIdx != lastIdx) {
-            address lastElement = firstArray[lastIdx];
-            firstArray[arrayIdx] = lastElement;
+            address lastElement = _holders.first[lastIdx];
+            _holders.first[arrayIdx] = lastElement;
             _holders.idx[lastElement][0] = holderIdx;
         }
 
-        firstArray.pop();
+        _holders.first.pop();
         delete _holders.idx[_holder];
     }
 
@@ -308,26 +304,22 @@ library TypesHelpers {
     }
 
     function removeSecond(Holders storage _holders, address _holder) internal {
-        // If the second index of _holder is 0 or the array is empty, no operation is needed
-        if (_holders.idx[_holder].length < 2) {
-            return;
-        }
-        if (_holders.second.length == 0) {
+        uint256 holderIdx = _holders.idx[_holder][1];
+
+        if (holderIdx == 0) {
             return;
         }
 
-        uint256 holderIdx = _holders.idx[_holder][1];
         uint256 arrayIdx = holderIdx - 1;
-        address[] storage secondArray = _holders.second; // Local storage reference
-        uint256 lastIdx = secondArray.length - 1;
+        uint256 lastIdx = _holders.second.length - 1;
 
         if (arrayIdx != lastIdx) {
-            address lastElement = secondArray[lastIdx];
-            secondArray[arrayIdx] = lastElement;
+            address lastElement = _holders.second[lastIdx];
+            _holders.second[arrayIdx] = lastElement;
             _holders.idx[lastElement][1] = holderIdx;
         }
 
-        secondArray.pop();
+        _holders.second.pop();
         _holders.idx[_holder][1] = 0; // Reset the index to indicate removal
     }
 

@@ -86,7 +86,7 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
             return;
         }
 
-        if (_holders.first.length == 0) {
+        if (_holders.first.length == 0 || _holders.second.length == 0) {
             return;
         }
 
