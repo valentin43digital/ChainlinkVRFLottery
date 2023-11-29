@@ -41,7 +41,7 @@ const LotteryConfig = {
   smashTimeLotteryEnabled: false,
   smashTimeLotteryConversionThreshold: "100000000000000000000",
   holdersLotteryEnabled: true,
-  holdersLotteryTxTrigger: 10,
+  holdersLotteryTxTrigger: 3,
   holdersLotteryMinPercent: 1,
   donationAddress: DONATE_TO,
   donationsLotteryEnabled: true,
