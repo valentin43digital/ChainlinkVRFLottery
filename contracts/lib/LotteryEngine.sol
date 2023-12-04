@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-// import {AutomationCompatible} from "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
+import "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
 import {ConsumerConfig, DistributionConfig, LotteryConfig, PancakeAdapter} from "./PancakeAdapter.sol";
 import {Counter, Holders, RuntimeCounter, HoldersLotteryConfig, SmashTimeLotteryConfig, DonationLotteryConfig, LotteryRound, LotteryType, JackpotEntry, DONATION_TICKET_TIMEOUT} from "./ConstantsAndTypes.sol";
 import {VRFConsumerBaseV2} from "./chainlink/VRFConsumerBaseV2.sol";
 
-abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
+abstract contract LotteryEngine is
+    AutomationCompatibleInterface,
+    PancakeAdapter,
+    VRFConsumerBaseV2
+{
     error NoDonationTicketsToTransfer();
     error RecipientsLengthNotEqualToAmounts();
 
@@ -78,19 +82,19 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
     }
 
     function _triggerHoldersLottery(
-        HoldersLotteryConfig memory _runtime,
+        // HoldersLotteryConfig memory _runtime,
         RuntimeCounter memory _runtimeCounter
     ) internal {
         // increment tx counter.
-        _runtimeCounter.increaseHoldersLotteryCounter();
+        // _runtimeCounter.increaseHoldersLotteryCounter();
 
-        if (_runtimeCounter.holdersLotteryTxCounter() < _runtime.lotteryTxTrigger) {
-            return;
-        }
+        // if (_runtimeCounter.holdersLotteryTxCounter() < _runtime.lotteryTxTrigger) {
+        //     return;
+        // }
 
-        if (_holders.first.length == 0 && _holders.second.length == 0) {
-            return;
-        }
+        // if (_holders.first.length == 0 && _holders.second.length == 0) {
+        //     return;
+        // }
 
         uint256 requestId = _requestRandomWords(1);
         rounds[requestId].lotteryType = LotteryType.HOLDERS;

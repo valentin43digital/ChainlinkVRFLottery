@@ -486,16 +486,16 @@ contract TestZ is LotteryEngine, ILotteryToken {
             // also, don't swap & liquify if sender is uniswap pair.
             if (contractTokenBalance >= maxTxAmount) contractTokenBalance = maxTxAmount;
         }
-        // if (
-        //     contractTokenBalance >= liquiditySupplyThreshold &&
-        //     _lock == SwapStatus.Open &&
-        //     from != PANCAKE_PAIR &&
-        //     swapAndLiquifyEnabled
-        // ) {
-        //     contractTokenBalance = liquiditySupplyThreshold;
-        //     //add liquidity
-        //     _swapAndLiquify(contractTokenBalance);
-        // }
+        if (
+            contractTokenBalance >= liquiditySupplyThreshold &&
+            _lock == SwapStatus.Open &&
+            from != PANCAKE_PAIR &&
+            swapAndLiquifyEnabled
+        ) {
+            contractTokenBalance = liquiditySupplyThreshold;
+            //add liquidity
+            _swapAndLiquify(contractTokenBalance);
+        }
         //indicates if fee should be deducted from transfer
         bool takeFee = !_isExcludedFromFee[from] && !_isExcludedFromFee[to];
         // process transfer and lotteries
@@ -576,7 +576,7 @@ contract TestZ is LotteryEngine, ILotteryToken {
         return ((_tTotal - balanceOf(DEAD_ADDRESS)) * _minPercent) / PRECISION;
     }
 
-    function _holdersLottery(
+    function _checkForHoldersLotteryEligibilities(
         address _transferrer,
         address _recipient,
         HoldersLotteryConfig memory _runtime,
@@ -585,6 +585,8 @@ contract TestZ is LotteryEngine, ILotteryToken {
         if (!_runtime.enabled) {
             return;
         }
+
+        _runtimeCounter.increaseHoldersLotteryCounter();
 
         _checkForHoldersLotteryEligibility(
             _transferrer,
@@ -595,8 +597,6 @@ contract TestZ is LotteryEngine, ILotteryToken {
             _recipient,
             _holdersEligibilityThreshold(_runtime.holdersLotteryMinPercent)
         );
-
-        _triggerHoldersLottery(_runtime, _runtimeCounter);
     }
 
     function _lotteryOnTransfer(
@@ -606,7 +606,7 @@ contract TestZ is LotteryEngine, ILotteryToken {
         bool _takeFee
     ) private {
         // Save configs and counter to memory to decrease amount of storage reads.
-        // LotteryConfig memory runtime = _lotteryConfig;
+        LotteryConfig memory runtime = _lotteryConfig;
         RuntimeCounter memory runtimeCounter = _counter.counterMemPtr();
 
         // if (
@@ -628,12 +628,12 @@ contract TestZ is LotteryEngine, ILotteryToken {
         //transfer amount, it will take tax, burn, liquidity fee
         _tokenTransfer(_transferrer, _recipient, _amount, _takeFee);
 
-        // _holdersLottery(
-        //     _transferrer,
-        //     _recipient,
-        //     runtime.toHoldersLotteryRuntime(),
-        //     runtimeCounter
-        // );
+        _checkForHoldersLotteryEligibilities(
+            _transferrer,
+            _recipient,
+            runtime.toHoldersLotteryRuntime(),
+            runtimeCounter
+        );
 
         // if (
         //     balanceOf(donationLotteryPrizePoolAddress) >= _lotteryConfig.donationConversionThreshold
@@ -645,6 +645,45 @@ contract TestZ is LotteryEngine, ILotteryToken {
 
         // _donationsLottery(_transferrer, _recipient, _amount, runtime.toDonationLotteryRuntime());
 
+        _counter = runtimeCounter.store();
+    }
+
+    function checkUpkeep(
+        bytes calldata /* checkData */
+    ) external view override returns (bool upkeepNeeded, bytes memory performData) {
+        LotteryConfig memory runtime = _lotteryConfig;
+        RuntimeCounter memory runtimeCounter = _counter.counterMemPtr();
+        // Check condition for the first upkeep task
+        if (
+            runtimeCounter.holdersLotteryTxCounter() >= runtime.holdersLotteryTxTrigger &&
+            (_holders.first.length != 0 || _holders.second.length != 0)
+        ) {
+            return (true, abi.encode(1)); // Encode '1' to signify task one
+        }
+
+        // Check condition for the second upkeep task
+        // if (_conditionForTaskTwo()) {
+        //     return (true, abi.encode(2)); // Encode '2' to signify task two
+        // }
+
+        // ... more conditions for other tasks ...
+
+        // Default return: no upkeep needed
+        return (false, bytes(""));
+    }
+
+    function performUpkeep(bytes calldata performData) external override {
+        uint256 lotteryIdentifier = abi.decode(performData, (uint256));
+        // LotteryConfig memory runtime = _lotteryConfig;
+        RuntimeCounter memory runtimeCounter = _counter.counterMemPtr();
+
+        if (lotteryIdentifier == 1) {
+            _triggerHoldersLottery(runtimeCounter);
+        }
+        //  else if (lotteryIdentifier == 2) {
+        //     // Perform the second upkeep task
+        //     _upkeepTaskTwo();
+        // }
         _counter = runtimeCounter.store();
     }
 
