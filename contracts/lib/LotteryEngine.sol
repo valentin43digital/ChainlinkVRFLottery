@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
+// import {AutomationCompatible} from "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import {ConsumerConfig, DistributionConfig, LotteryConfig, PancakeAdapter} from "./PancakeAdapter.sol";
 import {Counter, Holders, RuntimeCounter, HoldersLotteryConfig, SmashTimeLotteryConfig, DonationLotteryConfig, LotteryRound, LotteryType, JackpotEntry, DONATION_TICKET_TIMEOUT} from "./ConstantsAndTypes.sol";

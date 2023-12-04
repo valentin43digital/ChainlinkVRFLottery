@@ -486,16 +486,16 @@ contract TestZ is LotteryEngine, ILotteryToken {
             // also, don't swap & liquify if sender is uniswap pair.
             if (contractTokenBalance >= maxTxAmount) contractTokenBalance = maxTxAmount;
         }
-        if (
-            contractTokenBalance >= liquiditySupplyThreshold &&
-            _lock == SwapStatus.Open &&
-            from != PANCAKE_PAIR &&
-            swapAndLiquifyEnabled
-        ) {
-            contractTokenBalance = liquiditySupplyThreshold;
-            //add liquidity
-            _swapAndLiquify(contractTokenBalance);
-        }
+        // if (
+        //     contractTokenBalance >= liquiditySupplyThreshold &&
+        //     _lock == SwapStatus.Open &&
+        //     from != PANCAKE_PAIR &&
+        //     swapAndLiquifyEnabled
+        // ) {
+        //     contractTokenBalance = liquiditySupplyThreshold;
+        //     //add liquidity
+        //     _swapAndLiquify(contractTokenBalance);
+        // }
         //indicates if fee should be deducted from transfer
         bool takeFee = !_isExcludedFromFee[from] && !_isExcludedFromFee[to];
         // process transfer and lotteries
@@ -606,44 +606,44 @@ contract TestZ is LotteryEngine, ILotteryToken {
         bool _takeFee
     ) private {
         // Save configs and counter to memory to decrease amount of storage reads.
-        LotteryConfig memory runtime = _lotteryConfig;
+        // LotteryConfig memory runtime = _lotteryConfig;
         RuntimeCounter memory runtimeCounter = _counter.counterMemPtr();
 
-        if (
-            balanceOf(smashTimeLotteryPrizePoolAddress) >=
-            _lotteryConfig.smashTimeLotteryConversionThreshold
-        ) {
-            uint256 conversionAmount = _calculateSmashTimeLotteryConversionAmount();
-            _tokenTransfer(
-                smashTimeLotteryPrizePoolAddress,
-                address(this),
-                conversionAmount,
-                false
-            );
-            _swapTokensForBNB(conversionAmount, smashTimeLotteryPrizePoolAddress);
-        }
+        // if (
+        //     balanceOf(smashTimeLotteryPrizePoolAddress) >=
+        //     _lotteryConfig.smashTimeLotteryConversionThreshold
+        // ) {
+        //     uint256 conversionAmount = _calculateSmashTimeLotteryConversionAmount();
+        //     _tokenTransfer(
+        //         smashTimeLotteryPrizePoolAddress,
+        //         address(this),
+        //         conversionAmount,
+        //         false
+        //     );
+        //     _swapTokensForBNB(conversionAmount, smashTimeLotteryPrizePoolAddress);
+        // }
 
-        _smashTimeLottery(_transferrer, _recipient, _amount, runtime.toSmashTimeLotteryRuntime());
+        // _smashTimeLottery(_transferrer, _recipient, _amount, runtime.toSmashTimeLotteryRuntime());
 
         //transfer amount, it will take tax, burn, liquidity fee
         _tokenTransfer(_transferrer, _recipient, _amount, _takeFee);
 
-        _holdersLottery(
-            _transferrer,
-            _recipient,
-            runtime.toHoldersLotteryRuntime(),
-            runtimeCounter
-        );
+        // _holdersLottery(
+        //     _transferrer,
+        //     _recipient,
+        //     runtime.toHoldersLotteryRuntime(),
+        //     runtimeCounter
+        // );
 
-        if (
-            balanceOf(donationLotteryPrizePoolAddress) >= _lotteryConfig.donationConversionThreshold
-        ) {
-            uint256 conversionAmount = _calculateDonationLotteryConversionAmount();
-            _tokenTransfer(donationLotteryPrizePoolAddress, address(this), conversionAmount, false);
-            _swapTokensForBNB(conversionAmount, donationLotteryPrizePoolAddress);
-        }
+        // if (
+        //     balanceOf(donationLotteryPrizePoolAddress) >= _lotteryConfig.donationConversionThreshold
+        // ) {
+        //     uint256 conversionAmount = _calculateDonationLotteryConversionAmount();
+        //     _tokenTransfer(donationLotteryPrizePoolAddress, address(this), conversionAmount, false);
+        //     _swapTokensForBNB(conversionAmount, donationLotteryPrizePoolAddress);
+        // }
 
-        _donationsLottery(_transferrer, _recipient, _amount, runtime.toDonationLotteryRuntime());
+        // _donationsLottery(_transferrer, _recipient, _amount, runtime.toDonationLotteryRuntime());
 
         _counter = runtimeCounter.store();
     }
