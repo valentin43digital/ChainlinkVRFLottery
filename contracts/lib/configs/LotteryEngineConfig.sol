@@ -26,10 +26,6 @@ abstract contract LotteryEngineConfig {
         _lotteryConfig.holdersLotteryTxTrigger = _txAmount;
     }
 
-    function _setDonationLotteryTxTrigger(uint64 _txAmount) internal {
-        _lotteryConfig.donationLotteryTxTrigger = _txAmount;
-    }
-
     function _setHoldersLotteryMinPercent(uint256 _minPercent) internal {
         _lotteryConfig.holdersLotteryMinPercent = _minPercent;
     }
@@ -40,6 +36,16 @@ abstract contract LotteryEngineConfig {
 
     function _setMinimanDonation(uint256 _minimalDonation) internal {
         _lotteryConfig.minimalDonation = _minimalDonation;
+    }
+
+    function _setDonationConversionThreshold(uint256 _donationConversionThreshold) internal {
+        _lotteryConfig.donationConversionThreshold = _donationConversionThreshold;
+    }
+
+    function _setSmashTimeLotteryConversionThreshold(
+        uint256 _smashTimeLotteryConversionThreshold
+    ) internal {
+        _lotteryConfig.smashTimeLotteryConversionThreshold = _smashTimeLotteryConversionThreshold;
     }
 
     function _setMinimumDonationEntries(uint64 _minimumEntries) internal {

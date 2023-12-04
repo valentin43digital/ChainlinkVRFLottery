@@ -1,14 +1,14 @@
 import hre, { ethers } from 'hardhat';
 import fs from 'fs';
 
-async function main () {
+async function main() {
 	const net = hre.network.name;
 
-   const TTUSD = await ethers.getContractFactory("TTUSD");
-   const ttusd = await TTUSD.deploy(
-        "Test True USD",
-        "TTUSD"
-   )
+	const TTUSD = await ethers.getContractFactory("TTUSD");
+	const ttusd = await TTUSD.deploy(
+		"Test True USD",
+		"TTUSD"
+	)
 
 	// Sync env file
 	fs.appendFileSync(

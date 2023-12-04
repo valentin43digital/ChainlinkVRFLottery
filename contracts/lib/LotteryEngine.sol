@@ -14,9 +14,10 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
 
     uint256 internal _donationRound;
     mapping(address => uint256) private _nextDonationTimestamp;
-    mapping(uint256 => mapping(address => uint256[]))
-        internal _donatorTicketIdxs;
+    mapping(uint256 => mapping(address => uint256[])) internal _donatorTicketIdxs;
+    mapping(uint256 => mapping(address => bool)) private _hasDonated;
     address[] internal _donators;
+    uint256 internal _uniqueDonatorsCounter;
     Holders internal _holders;
 
     Counter internal _counter;
@@ -27,19 +28,9 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
         ConsumerConfig memory _consumerConfig,
         DistributionConfig memory _distributionConfig,
         LotteryConfig memory _lotteryConfig
-    )
-        PancakeAdapter(
-            _routerAddress,
-            _fee,
-            _consumerConfig,
-            _distributionConfig,
-            _lotteryConfig
-        )
-    {}
+    ) PancakeAdapter(_routerAddress, _fee, _consumerConfig, _distributionConfig, _lotteryConfig) {}
 
-    function _requestRandomWords(
-        uint32 _wordsAmount
-    ) internal returns (uint256) {
+    function _requestRandomWords(uint32 _wordsAmount) internal returns (uint256) {
         return
             VRFCoordinatorV2Interface(VRF_COORDINATOR).requestRandomWords(
                 _consumerConfig.gasPriceKey,
@@ -56,27 +47,33 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
         uint256 _amount,
         SmashTimeLotteryConfig memory _runtime
     ) internal {
-        if (_runtime.enabled) {
-            if (_transferrer != PANCAKE_PAIR) {
-                return;
-            }
-
-            if (_isExcluded[_recipient] || _isExcludedFromFee[_recipient]) {
-                return;
-            }
-
-            uint256 usdAmount = _TokenPriceInUSD(_amount) / _TUSD_DECIMALS;
-            uint256 hundreds = usdAmount / 100;
-            if (hundreds == 0) {
-                return;
-            }
-            uint256 requestId = _requestRandomWords(2);
-            rounds[requestId].lotteryType = LotteryType.JACKPOT;
-            rounds[requestId].jackpotEntry = hundreds >= 10
-                ? JackpotEntry.USD_1000
-                : JackpotEntry(uint8(hundreds));
-            rounds[requestId].jackpotPlayer = _recipient;
+        if (!_runtime.enabled) {
+            return;
         }
+        if (_transferrer != PANCAKE_PAIR) {
+            return;
+        }
+
+        if (_isExcludedFromReward[_recipient]) {
+            return;
+        }
+
+        if (_isExcludedFromFee[_recipient]) {
+            return;
+        }
+
+        uint256 usdAmount = _TokenPriceInUSD(_amount) / _TUSD_DECIMALS;
+        uint256 hundreds = usdAmount / 100;
+        if (hundreds == 0) {
+            return;
+        }
+
+        uint256 requestId = _requestRandomWords(2);
+        rounds[requestId].lotteryType = LotteryType.JACKPOT;
+        rounds[requestId].jackpotEntry = hundreds >= 10
+            ? JackpotEntry.USD_1000
+            : JackpotEntry(uint8(hundreds));
+        rounds[requestId].jackpotPlayer = _recipient;
     }
 
     function _triggerHoldersLottery(
@@ -86,14 +83,11 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
         // increment tx counter.
         _runtimeCounter.increaseHoldersLotteryCounter();
 
-        if (
-            _runtimeCounter.holdersLotteryTxCounter() <
-            _runtime.lotteryTxTrigger
-        ) {
+        if (_runtimeCounter.holdersLotteryTxCounter() < _runtime.lotteryTxTrigger) {
             return;
         }
 
-        if (_holders.first.length == 0) {
+        if (_holders.first.length == 0 && _holders.second.length == 0) {
             return;
         }
 
@@ -106,47 +100,32 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
         address _transferrer,
         address _recipient,
         uint256 _amount,
-        DonationLotteryConfig memory _runtime,
-        RuntimeCounter memory _runtimeCounter
+        DonationLotteryConfig memory _runtime
     ) internal {
-        if (_runtime.enabled) {
-            // if donation lottery is running, increment tx counter.
-            _runtimeCounter.increaseDonationLotteryCounter();
-
-            // if this transfer is a donation, add a ticket for transferrer.
-            if (
-                _recipient == _runtime.donationAddress &&
-                _amount >= _runtime.minimalDonation
-            ) {
-                if (block.timestamp > _nextDonationTimestamp[_transferrer]) {
-                    uint256 length = _donators.length;
-                    _donators.push(_transferrer);
-                    _donatorTicketIdxs[_donationRound][_transferrer].push(
-                        length
-                    );
-                    _nextDonationTimestamp[_transferrer] =
-                        block.timestamp +
-                        DONATION_TICKET_TIMEOUT;
-                }
-            }
-
-            // check if minimum donation entries requirement is met.
-            if (_donators.length < _runtime.minimumEntries) {
-                return;
-            }
-
-            // check if tx counter can trigger the lottery.
-            if (
-                _runtimeCounter.donationLotteryTxCounter() <
-                _runtime.lotteryTxTrigger
-            ) {
-                return;
-            }
-            uint256 requestId = _requestRandomWords(1);
-            rounds[requestId].lotteryType = LotteryType.DONATION;
-
-            _runtimeCounter.resetDonationLotteryCounter();
+        if (!_runtime.enabled) {
+            return;
         }
+        // if this transfer is a donation, add a ticket for transferrer.
+        if (_recipient == _runtime.donationAddress && _amount >= _runtime.minimalDonation) {
+            if (block.timestamp > _nextDonationTimestamp[_transferrer]) {
+                uint256 length = _donators.length;
+                _donators.push(_transferrer);
+                _donatorTicketIdxs[_donationRound][_transferrer].push(length);
+                if (!_hasDonated[_donationRound][_transferrer]) {
+                    _hasDonated[_donationRound][_transferrer] = true;
+                    _uniqueDonatorsCounter++;
+                }
+                _nextDonationTimestamp[_transferrer] = block.timestamp + DONATION_TICKET_TIMEOUT;
+            }
+        }
+
+        // check if minimum donation entries requirement is met.
+        if (_uniqueDonatorsCounter < _runtime.minimumEntries) {
+            return;
+        }
+
+        uint256 requestId = _requestRandomWords(1);
+        rounds[requestId].lotteryType = LotteryType.DONATION;
     }
 
     function transferDonationTicket(address _to) external {
@@ -166,31 +145,45 @@ abstract contract LotteryEngine is PancakeAdapter, VRFConsumerBaseV2 {
         address[] calldata _recipients,
         uint256[] calldata _amounts
     ) external onlyOwner {
-        if (_recipients.length != _amounts.length) {
+        uint256 recipientsLength = _recipients.length;
+        if (recipientsLength != _amounts.length) {
             revert RecipientsLengthNotEqualToAmounts();
         }
+
         uint256 round = _donationRound;
-        for (uint256 i; i < _recipients.length; ) {
-            uint256 idx = _donatorTicketIdxs[round][_recipients[i]].length;
-            for (uint256 j; j < _amounts[i]; ) {
-                _donators.push(_recipients[i]);
-                _donatorTicketIdxs[round][_recipients[i]].push(idx);
-                unchecked {
-                    ++j;
-                    ++idx;
+        for (uint256 i = 0; i < recipientsLength; ++i) {
+            address recipient = _recipients[i];
+            uint256 amount = _amounts[i];
+            uint256 idx = _donatorTicketIdxs[round][recipient].length;
+            uint256 newIdx = idx + amount;
+
+            for (; idx < newIdx; ++idx) {
+                _donators.push(recipient);
+                _donatorTicketIdxs[round][recipient].push(idx);
+                if (!_hasDonated[_donationRound][recipient]) {
+                    _hasDonated[_donationRound][recipient] = true;
+                    _uniqueDonatorsCounter++;
                 }
-            }
-            unchecked {
-                ++i;
             }
         }
     }
 
-    function holdersLotteryTickets() external view returns (address[] memory) {
-        return _holders.allTickets();
+    function holdersLotteryHolders() external view returns (address[] memory) {
+        return _holders.allHolders();
+    }
+
+    function holdersLotteryTicketsAmountPerHolder(address _holder) external view returns (uint256) {
+        return _holders.getNumberOfTickets(_holder);
     }
 
     function donationLotteryTickets() external view returns (address[] memory) {
         return _donators;
+    }
+
+    // Function to get the number of tickets for a donator
+    function donationLotteryTicketsAmountPerDonator(
+        address donator
+    ) external view returns (uint256) {
+        return _donatorTicketIdxs[_donationRound][donator].length;
     }
 }
