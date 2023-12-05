@@ -104,6 +104,7 @@ contract TestZ is LotteryEngine, ILotteryToken {
     uint256 public totalAmountWonInSmashTimeLottery;
     uint256 public totalAmountWonInDonationLottery;
     uint256 public totalAmountWonInHoldersLottery;
+    address public forwarderAddress;
 
     IERC20 private _wBNB;
 
@@ -599,6 +600,18 @@ contract TestZ is LotteryEngine, ILotteryToken {
         );
     }
 
+    function _convertSmashTimeLotteryPrize() private {
+        uint256 conversionAmount = _calculateSmashTimeLotteryConversionAmount();
+        _tokenTransfer(smashTimeLotteryPrizePoolAddress, address(this), conversionAmount, false);
+        _swapTokensForBNB(conversionAmount, smashTimeLotteryPrizePoolAddress);
+    }
+
+    function _convertDonationLotteryPrize() private {
+        uint256 conversionAmount = _calculateDonationLotteryConversionAmount();
+        _tokenTransfer(donationLotteryPrizePoolAddress, address(this), conversionAmount, false);
+        _swapTokensForBNB(conversionAmount, donationLotteryPrizePoolAddress);
+    }
+
     function _lotteryOnTransfer(
         address _transferrer,
         address _recipient,
@@ -609,21 +622,7 @@ contract TestZ is LotteryEngine, ILotteryToken {
         LotteryConfig memory runtime = _lotteryConfig;
         RuntimeCounter memory runtimeCounter = _counter.counterMemPtr();
 
-        // if (
-        //     balanceOf(smashTimeLotteryPrizePoolAddress) >=
-        //     _lotteryConfig.smashTimeLotteryConversionThreshold
-        // ) {
-        //     uint256 conversionAmount = _calculateSmashTimeLotteryConversionAmount();
-        //     _tokenTransfer(
-        //         smashTimeLotteryPrizePoolAddress,
-        //         address(this),
-        //         conversionAmount,
-        //         false
-        //     );
-        //     _swapTokensForBNB(conversionAmount, smashTimeLotteryPrizePoolAddress);
-        // }
-
-        // _smashTimeLottery(_transferrer, _recipient, _amount, runtime.toSmashTimeLotteryRuntime());
+        _smashTimeLottery(_transferrer, _recipient, _amount, runtime.toSmashTimeLotteryRuntime());
 
         //transfer amount, it will take tax, burn, liquidity fee
         _tokenTransfer(_transferrer, _recipient, _amount, _takeFee);
@@ -635,15 +634,12 @@ contract TestZ is LotteryEngine, ILotteryToken {
             runtimeCounter
         );
 
-        // if (
-        //     balanceOf(donationLotteryPrizePoolAddress) >= _lotteryConfig.donationConversionThreshold
-        // ) {
-        //     uint256 conversionAmount = _calculateDonationLotteryConversionAmount();
-        //     _tokenTransfer(donationLotteryPrizePoolAddress, address(this), conversionAmount, false);
-        //     _swapTokensForBNB(conversionAmount, donationLotteryPrizePoolAddress);
-        // }
-
-        // _donationsLottery(_transferrer, _recipient, _amount, runtime.toDonationLotteryRuntime());
+        _addDonationsLotteryTickets(
+            _transferrer,
+            _recipient,
+            _amount,
+            runtime.toDonationLotteryRuntime()
+        );
 
         _counter = runtimeCounter.store();
     }
@@ -651,39 +647,64 @@ contract TestZ is LotteryEngine, ILotteryToken {
     function checkUpkeep(
         bytes calldata /* checkData */
     ) external view override returns (bool upkeepNeeded, bytes memory performData) {
-        LotteryConfig memory runtime = _lotteryConfig;
         RuntimeCounter memory runtimeCounter = _counter.counterMemPtr();
-        // Check condition for the first upkeep task
+        uint256 upkeepTasks = 0;
         if (
-            runtimeCounter.holdersLotteryTxCounter() >= runtime.holdersLotteryTxTrigger &&
-            (_holders.first.length != 0 || _holders.second.length != 0)
+            balanceOf(smashTimeLotteryPrizePoolAddress) >=
+            _lotteryConfig.smashTimeLotteryConversionThreshold
         ) {
-            return (true, abi.encode(1)); // Encode '1' to signify task one
+            upkeepTasks |= 1;
         }
 
-        // Check condition for the second upkeep task
-        // if (_conditionForTaskTwo()) {
-        //     return (true, abi.encode(2)); // Encode '2' to signify task two
-        // }
+        if (
+            balanceOf(donationLotteryPrizePoolAddress) >= _lotteryConfig.donationConversionThreshold
+        ) {
+            upkeepTasks |= 2;
+        }
+        // Check condition for the first upkeep task
+        if (
+            _lotteryConfig.holdersLotteryEnabled &&
+            runtimeCounter.holdersLotteryTxCounter() >= _lotteryConfig.holdersLotteryTxTrigger &&
+            (_holders.first.length != 0 || _holders.second.length != 0)
+        ) {
+            upkeepTasks |= 4; // Set a bit for hodl lottery
+        }
+        if (
+            _lotteryConfig.donationsLotteryEnabled &&
+            _uniqueDonatorsCounter >= _lotteryConfig.minimumDonationEntries
+        ) {
+            upkeepTasks |= 8; // Set a bit for donation lottery
+        }
 
-        // ... more conditions for other tasks ...
+        if (upkeepTasks != 0) {
+            return (true, abi.encode(upkeepTasks));
+        }
 
-        // Default return: no upkeep needed
         return (false, bytes(""));
     }
 
     function performUpkeep(bytes calldata performData) external override {
-        uint256 lotteryIdentifier = abi.decode(performData, (uint256));
-        // LotteryConfig memory runtime = _lotteryConfig;
+        require(
+            msg.sender == forwarderAddress,
+            "This address does not have permission to call performUpkeep"
+        );
+        uint256 tasks = abi.decode(performData, (uint256));
+
         RuntimeCounter memory runtimeCounter = _counter.counterMemPtr();
 
-        if (lotteryIdentifier == 1) {
+        if (tasks & 1 != 0) {
+            _convertSmashTimeLotteryPrize();
+        }
+        if (tasks & 2 != 0) {
+            _convertDonationLotteryPrize();
+        }
+        if (tasks & 4 != 0) {
             _triggerHoldersLottery(runtimeCounter);
         }
-        //  else if (lotteryIdentifier == 2) {
-        //     // Perform the second upkeep task
-        //     _upkeepTaskTwo();
-        // }
+        if (tasks & 8 != 0) {
+            _donationsLottery();
+        }
+
         _counter = runtimeCounter.store();
     }
 
@@ -1012,6 +1033,13 @@ contract TestZ is LotteryEngine, ILotteryToken {
 
     function setThreeDaysProtection(bool _enabled) external onlyOwner {
         threeDaysProtectionEnabled = _enabled;
+    }
+
+    /// @notice Set the address that `performUpkeep` is called from
+    /// @dev Only callable by the owner
+    /// @param _forwarderAddress the address to set
+    function setForwarderAddress(address _forwarderAddress) external onlyOwner {
+        forwarderAddress = _forwarderAddress;
     }
 
     function withdraw(uint256 _amount) external onlyOwner {

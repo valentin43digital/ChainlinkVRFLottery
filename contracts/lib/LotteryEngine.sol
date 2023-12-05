@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
 import {ConsumerConfig, DistributionConfig, LotteryConfig, PancakeAdapter} from "./PancakeAdapter.sol";
-import {Counter, Holders, RuntimeCounter, HoldersLotteryConfig, SmashTimeLotteryConfig, DonationLotteryConfig, LotteryRound, LotteryType, JackpotEntry, DONATION_TICKET_TIMEOUT} from "./ConstantsAndTypes.sol";
+import {Counter, Holders, RuntimeCounter, HoldersLotteryConfig, SmashTimeLotteryConfig, DonationLotteryConfig, LotteryRound, LotteryType, JackpotEntry} from "./ConstantsAndTypes.sol";
 import {VRFConsumerBaseV2} from "./chainlink/VRFConsumerBaseV2.sol";
 
 abstract contract LotteryEngine is
@@ -18,7 +18,6 @@ abstract contract LotteryEngine is
     mapping(uint256 => LotteryRound) public rounds;
 
     uint256 internal _donationRound;
-    mapping(address => uint256) private _nextDonationTimestamp;
     mapping(uint256 => mapping(address => uint256[])) internal _donatorTicketIdxs;
     mapping(uint256 => mapping(address => bool)) private _hasDonated;
     address[] internal _donators;
@@ -81,27 +80,13 @@ abstract contract LotteryEngine is
         rounds[requestId].jackpotPlayer = _recipient;
     }
 
-    function _triggerHoldersLottery(
-        // HoldersLotteryConfig memory _runtime,
-        RuntimeCounter memory _runtimeCounter
-    ) internal {
-        // increment tx counter.
-        // _runtimeCounter.increaseHoldersLotteryCounter();
-
-        // if (_runtimeCounter.holdersLotteryTxCounter() < _runtime.lotteryTxTrigger) {
-        //     return;
-        // }
-
-        // if (_holders.first.length == 0 && _holders.second.length == 0) {
-        //     return;
-        // }
-
+    function _triggerHoldersLottery(RuntimeCounter memory _runtimeCounter) internal {
         uint256 requestId = _requestRandomWords(1);
         rounds[requestId].lotteryType = LotteryType.HOLDERS;
         _runtimeCounter.resetHoldersLotteryCounter();
     }
 
-    function _donationsLottery(
+    function _addDonationsLotteryTickets(
         address _transferrer,
         address _recipient,
         uint256 _amount,
@@ -112,23 +97,17 @@ abstract contract LotteryEngine is
         }
         // if this transfer is a donation, add a ticket for transferrer.
         if (_recipient == _runtime.donationAddress && _amount >= _runtime.minimalDonation) {
-            if (block.timestamp > _nextDonationTimestamp[_transferrer]) {
-                uint256 length = _donators.length;
-                _donators.push(_transferrer);
-                _donatorTicketIdxs[_donationRound][_transferrer].push(length);
-                if (!_hasDonated[_donationRound][_transferrer]) {
-                    _hasDonated[_donationRound][_transferrer] = true;
-                    _uniqueDonatorsCounter++;
-                }
-                _nextDonationTimestamp[_transferrer] = block.timestamp + DONATION_TICKET_TIMEOUT;
+            uint256 length = _donators.length;
+            _donators.push(_transferrer);
+            _donatorTicketIdxs[_donationRound][_transferrer].push(length);
+            if (!_hasDonated[_donationRound][_transferrer]) {
+                _hasDonated[_donationRound][_transferrer] = true;
+                _uniqueDonatorsCounter++;
             }
         }
+    }
 
-        // check if minimum donation entries requirement is met.
-        if (_uniqueDonatorsCounter < _runtime.minimumEntries) {
-            return;
-        }
-
+    function _donationsLottery() internal {
         uint256 requestId = _requestRandomWords(1);
         rounds[requestId].lotteryType = LotteryType.DONATION;
     }

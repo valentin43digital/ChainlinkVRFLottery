@@ -124,7 +124,6 @@ uint256 constant DAY_THREE_LIMIT = 150;
 uint256 constant SEVENTY_FIVE_PERCENTS = 7500;
 uint256 constant TWENTY_FIVE_PERCENTS = 2500;
 uint256 constant PRECISION = 10_000;
-uint256 constant DONATION_TICKET_TIMEOUT = 3600;
 uint256 constant ONE_WORD = 0x20;
 uint256 constant TWO_WORD = 0x40;
 uint256 constant FIVE_WORDS = 0x100;
