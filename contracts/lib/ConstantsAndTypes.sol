@@ -245,7 +245,7 @@ library TypesHelpers {
             }
         }
         // Check if the holder is in the second array
-        else if (_holders.idx[_holder][1] > 0) {
+        if (_holders.idx[_holder][1] > 0) {
             // Subtract 1 because array indices start from 0, but we stored starting from 1
             uint256 indexInSecond = _holders.idx[_holder][1] - 1;
             if (

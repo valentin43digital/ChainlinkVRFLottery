@@ -101,8 +101,8 @@ contract TestZ is
     address[] private _excludedFromReward;
 
     uint256 public constant FEE_CAP = 500;
-    uint256 public liquiditySupplyThreshold = 100 * 1e18; // TODO:  use real value
-    uint256 public feeSupplyThreshold = 100 * 1e18; // TODO:  use real value
+    uint256 public liquiditySupplyThreshold = 1000 * 1e18; // TODO:  use real value
+    uint256 public feeSupplyThreshold = 1000 * 1e18; // TODO:  use real value
     uint256 private _tTotal = 10_000_000_000 * 1e18;
     uint256 private _rTotal = (MAX_UINT256 - (MAX_UINT256 % _tTotal));
     uint256 public maxTxAmount = 10_000_000_000 * 1e18;
@@ -620,6 +620,8 @@ contract TestZ is
             return;
         }
 
+        _holdersLotteryTxCounter++;
+
         _checkForHoldersLotteryEligibility(
             _transferrer,
             _holdersEligibilityThreshold(_lotteryConfig.holdersLotteryMinPercent)
@@ -653,8 +655,6 @@ contract TestZ is
 
         //transfer amount, it will take tax, burn, liquidity fee
         _tokenTransfer(_transferrer, _recipient, _amount, _takeFee);
-
-        _holdersLotteryTxCounter++;
 
         _checkForHoldersLotteryEligibilities(_transferrer, _recipient);
 
@@ -1005,7 +1005,6 @@ contract TestZ is
         _round.lotteryType = LotteryType.FINISHED_DONATION;
 
         delete _donators;
-        _uniqueDonatorsCounter = 0;
         _donationRound += 1;
     }
 
@@ -1076,6 +1075,7 @@ contract TestZ is
         requestIndexToRequestId[requestCounter] = requestId;
         requestCounter += 1;
         rounds[requestId].lotteryType = LotteryType.DONATION;
+        _uniqueDonatorsCounter = 0;
     }
 
     function transferDonationTicket(address _to) external {
