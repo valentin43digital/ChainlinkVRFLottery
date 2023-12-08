@@ -14,12 +14,14 @@ abstract contract LotteryEngineConfig {
         _lotteryConfig.smashTimeLotteryEnabled = _flag;
     }
 
-    function _switchHoldersLotteryFlag(bool _flag) internal {
-        _lotteryConfig.holdersLotteryEnabled = _flag;
+    function _setSmashTimeLotteryConversionThreshold(
+        uint256 _smashTimeLotteryConversionThreshold
+    ) internal {
+        _lotteryConfig.smashTimeLotteryConversionThreshold = _smashTimeLotteryConversionThreshold;
     }
 
-    function _switchDonationsLotteryFlag(bool _flag) internal {
-        _lotteryConfig.donationsLotteryEnabled = _flag;
+    function _switchHoldersLotteryFlag(bool _flag) internal {
+        _lotteryConfig.holdersLotteryEnabled = _flag;
     }
 
     function _setHoldersLotteryTxTrigger(uint64 _txAmount) internal {
@@ -34,18 +36,16 @@ abstract contract LotteryEngineConfig {
         _lotteryConfig.donationAddress = _donationAddress;
     }
 
+    function _switchDonationsLotteryFlag(bool _flag) internal {
+        _lotteryConfig.donationsLotteryEnabled = _flag;
+    }
+
     function _setMinimanDonation(uint256 _minimalDonation) internal {
         _lotteryConfig.minimalDonation = _minimalDonation;
     }
 
     function _setDonationConversionThreshold(uint256 _donationConversionThreshold) internal {
         _lotteryConfig.donationConversionThreshold = _donationConversionThreshold;
-    }
-
-    function _setSmashTimeLotteryConversionThreshold(
-        uint256 _smashTimeLotteryConversionThreshold
-    ) internal {
-        _lotteryConfig.smashTimeLotteryConversionThreshold = _smashTimeLotteryConversionThreshold;
     }
 
     function _setMinimumDonationEntries(uint64 _minimumEntries) internal {

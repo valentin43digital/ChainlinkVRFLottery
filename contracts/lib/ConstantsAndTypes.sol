@@ -54,25 +54,6 @@ struct LotteryConfig {
     uint256 donationConversionThreshold;
 }
 
-struct DonationLotteryConfig {
-    address donationAddress;
-    bool enabled;
-    uint64 minimumEntries;
-    uint256 minimalDonation;
-    uint256 donationConversionThreshold;
-}
-
-struct SmashTimeLotteryConfig {
-    bool enabled;
-    uint256 smashTimeLotteryConversionThreshold;
-}
-
-struct HoldersLotteryConfig {
-    bool enabled;
-    uint64 lotteryTxTrigger;
-    uint256 holdersLotteryMinPercent;
-}
-
 struct Holders {
     address[] first;
     address[] second;
@@ -103,14 +84,6 @@ enum JackpotEntry {
     USD_1000
 }
 
-struct LotteryRound {
-    uint256 prize;
-    LotteryType lotteryType;
-    address winner;
-    address jackpotPlayer;
-    JackpotEntry jackpotEntry;
-}
-
 struct RandomWords {
     uint256 first;
     uint256 second;
@@ -128,7 +101,6 @@ uint256 constant ONE_WORD = 0x20;
 uint256 constant TWO_WORD = 0x40;
 uint256 constant FIVE_WORDS = 0x100;
 uint256 constant TWENTY_FIVE_BITS = 25;
-uint256 constant LOTTERY_CONFIG_SLOT = 10;
 
 Counter constant INCREMENT_HOLDER_COUNTER = Counter.wrap(1);
 
@@ -144,12 +116,6 @@ using TypesHelpers for LotteryType global;
 
 function addition(Counter a, Counter b) pure returns (Counter) {
     return Counter.wrap(Counter.unwrap(a) + Counter.unwrap(b));
-}
-
-function toRandomWords(uint256[] memory _array) pure returns (RandomWords memory _words) {
-    assembly {
-        _words := add(_array, ONE_WORD)
-    }
 }
 
 library TypesHelpers {
@@ -204,30 +170,6 @@ library TypesHelpers {
         uint256 fee
     ) internal pure returns (uint256) {
         return (fee * uint32(Fee.unwrap(feeConfig))) / PRECISION;
-    }
-
-    function toDonationLotteryRuntime(
-        LotteryConfig memory _runtime
-    ) internal pure returns (DonationLotteryConfig memory donationRuntime) {
-        assembly {
-            donationRuntime := add(_runtime, FIVE_WORDS)
-        }
-    }
-
-    function toSmashTimeLotteryRuntime(
-        LotteryConfig memory _runtime
-    ) internal pure returns (SmashTimeLotteryConfig memory smashTimeRuntime) {
-        assembly {
-            smashTimeRuntime := _runtime
-        }
-    }
-
-    function toHoldersLotteryRuntime(
-        LotteryConfig memory _runtime
-    ) internal pure returns (HoldersLotteryConfig memory holdersRuntime) {
-        assembly {
-            holdersRuntime := add(_runtime, TWO_WORD)
-        }
     }
 
     function store(RuntimeCounter memory _counter) internal pure returns (Counter counter) {
@@ -326,24 +268,6 @@ library TypesHelpers {
 
     function existsSecond(Holders storage _holders, address _holder) internal view returns (bool) {
         return _holders.idx[_holder][1] != 0;
-    }
-
-    function isActive(LotteryType _lotteryType) internal pure returns (bool res) {
-        assembly {
-            switch _lotteryType
-            case 1 {
-                res := true
-            }
-            case 2 {
-                res := true
-            }
-            case 3 {
-                res := true
-            }
-            default {
-
-            }
-        }
     }
 
     // Function to get the number of tickets for a token holder

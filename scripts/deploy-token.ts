@@ -54,6 +54,7 @@ async function main() {
         config.VRF_COORDINATOR_ADDRESS,
         config.PANCAKE_ROUTER_ADDRESS,
         config.WBNB_ADDRESS,
+        config.USDT_ADDRESS,
         400, // TODO: use real value for mainnet
         ConsumerConfig,
         ProtocolConfig,

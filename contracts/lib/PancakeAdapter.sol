@@ -3,40 +3,33 @@ pragma solidity ^0.8.19;
 
 import {IPancakeRouter02} from "../interfaces/IPancakeRouter02.sol";
 import {IPancakeFactory} from "../interfaces/IPancakeFactory.sol";
-import {Configuration} from "./configs/Configuration.sol";
-import {ConsumerConfig, DistributionConfig, LotteryConfig} from "./ConstantsAndTypes.sol";
 
-abstract contract PancakeAdapter is Configuration {
-    address internal constant _TUSD_ADDRESS = 0xc515Df5D4a97Efc3f2adb1c95929da061A606Ac2; // TODO: use real value for mainnet
-    address internal constant _WBNB_ADDRESS = 0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd; // TODO: use real value for mainnet
-    uint256 internal constant _TUSD_DECIMALS = 1e18;
+abstract contract PancakeAdapter {
+    address internal _USDT_ADDRESS;
+    address internal _WBNB_ADDRESS;
 
     IPancakeRouter02 public immutable PANCAKE_ROUTER;
 
     address public immutable PANCAKE_PAIR;
 
-    constructor(
-        address _routerAddress,
-        uint256 _fee,
-        ConsumerConfig memory _consumerConfig,
-        DistributionConfig memory _distributionConfig,
-        LotteryConfig memory _lotteryConfig
-    ) Configuration(_fee, _consumerConfig, _distributionConfig, _lotteryConfig) {
+    constructor(address _routerAddress, address _wbnbAddress, address _usdtAddress) {
         PANCAKE_ROUTER = IPancakeRouter02(_routerAddress);
         PANCAKE_PAIR = _createPancakeSwapPair();
+        _WBNB_ADDRESS = _wbnbAddress;
+        _USDT_ADDRESS = _usdtAddress;
     }
 
     function _createPancakeSwapPair() internal returns (address) {
         return IPancakeFactory(PANCAKE_ROUTER.factory()).createPair(address(this), _WBNB_ADDRESS);
     }
 
-    function _addLiquidity(uint256 tokenAmount, uint256 bnbAmount) internal {
+    function _addLiquidity(uint256 tokenAmount, uint256 bnbAmount, address _to) internal {
         PANCAKE_ROUTER.addLiquidityETH{value: bnbAmount}(
             address(this),
             tokenAmount,
             0, // slippage is unavoidable
             0, // slippage is unavoidable
-            owner(),
+            _to,
             block.timestamp
         );
     }
@@ -83,7 +76,7 @@ abstract contract PancakeAdapter is Configuration {
         address[] memory path = new address[](3);
         path[0] = address(this);
         path[1] = _WBNB_ADDRESS;
-        path[2] = _TUSD_ADDRESS;
+        path[2] = _USDT_ADDRESS;
 
         PANCAKE_ROUTER.swapExactTokensForTokensSupportingFeeOnTransferTokens(
             _tokensAmount,
@@ -99,7 +92,7 @@ abstract contract PancakeAdapter is Configuration {
         address[] memory path = new address[](3);
         path[0] = address(this);
         path[1] = _WBNB_ADDRESS;
-        path[2] = _TUSD_ADDRESS;
+        path[2] = _USDT_ADDRESS;
 
         usdAmount = PANCAKE_ROUTER.getAmountsOut(_amount, path)[2];
     }
