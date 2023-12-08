@@ -143,6 +143,9 @@ contract TestZ is
     IERC20 private _WBNB;
     VRFCoordinatorV2Interface private _COORDINATOR;
 
+    mapping(uint256 => uint256) public requestIndexToRequestId;
+    uint256 public requestCounter;
+
     constructor(
         address _mintSupplyTo,
         address _coordinatorAddress,
@@ -535,7 +538,9 @@ contract TestZ is
             _swapAndLiquify(contractTokenBalance);
         }
         //indicates if fee should be deducted from transfer
-        bool takeFee = !_isExcludedFromFee[from] && !_isExcludedFromFee[to];
+        bool takeFee = (!_isExcludedFromFee[from] && !_isExcludedFromFee[to]) ||
+            (from == PANCAKE_PAIR && !_isExcludedFromFee[to]) ||
+            (!_isExcludedFromFee[from] && to == PANCAKE_PAIR);
         // process transfer and lotteries
         _lotteryOnTransfer(from, to, amount, takeFee);
         if (_lock == SwapStatus.Open) _distributeFees();
@@ -593,20 +598,17 @@ contract TestZ is
 
         uint256 balance = balanceOf(_participant);
 
-        // Remove from both lists initially to reset the participant's status
-
-        // Add to the first list if balance is at least _balanceThreshold but less than 3 * _balanceThreshold
-        if (balance >= _balanceThreshold && balance < _balanceThreshold * 3) {
+        
+        if (balance < _balanceThreshold * 3) {
             _holders.removeSecond(_participant);
-            _holders.addFirst(_participant);
-        }
-        // Add to the second list if balance is 3 * _balanceThreshold or more
-        else if (balance >= _balanceThreshold * 3) {
-            _holders.removeFirst(_participant);
-            _holders.addSecond(_participant);
         } else {
+            _holders.addSecond(_participant);
+        }
+
+        if (balance < _balanceThreshold) {
             _holders.removeFirst(_participant);
-            _holders.removeSecond(_participant);
+        } else {
+            _holders.addFirst(_participant);
         }
     }
 
@@ -981,7 +983,7 @@ contract TestZ is
         assembly {
             winnerIdx := mod(_random, holdersLength)
         }
-        address winner = _holders.allHolders()[winnerIdx];
+        address winner = _holders.allTickets()[winnerIdx];
         uint256 prize = _calculateHoldersLotteryPrize();
 
         _tokenTransfer(holderLotteryPrizePoolAddress, winner, prize, false);
@@ -1038,6 +1040,8 @@ contract TestZ is
         }
 
         uint256 requestId = _requestRandomWords(2);
+        requestIndexToRequestId[requestCounter] = requestId;
+        requestCounter += 1;
         rounds[requestId].lotteryType = LotteryType.JACKPOT;
         rounds[requestId].jackpotEntry = hundreds >= 10
             ? JackpotEntry.USD_1000
@@ -1047,6 +1051,8 @@ contract TestZ is
 
     function _triggerHoldersLottery(RuntimeCounter memory _runtimeCounter) private {
         uint256 requestId = _requestRandomWords(1);
+        requestIndexToRequestId[requestCounter] = requestId;
+        requestCounter += 1;
         rounds[requestId].lotteryType = LotteryType.HOLDERS;
         _runtimeCounter.resetHoldersLotteryCounter();
     }
@@ -1076,6 +1082,8 @@ contract TestZ is
 
     function _donationsLottery() private {
         uint256 requestId = _requestRandomWords(1);
+        requestIndexToRequestId[requestCounter] = requestId;
+        requestCounter += 1;
         rounds[requestId].lotteryType = LotteryType.DONATION;
     }
 
@@ -1119,8 +1127,8 @@ contract TestZ is
         }
     }
 
-    function holdersLotteryHolders() external view returns (address[] memory) {
-        return _holders.allHolders();
+    function holdersLotteryTickets() external view returns (address[] memory) {
+        return _holders.allTickets();
     }
 
     function holdersLotteryTicketsAmountPerHolder(address _holder) external view returns (uint256) {

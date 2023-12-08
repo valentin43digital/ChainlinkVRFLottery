@@ -198,7 +198,7 @@ library TypesHelpers {
         runtimeCounter.counter = _counter;
     }
 
-    function allHolders(Holders storage _holders) internal view returns (address[] memory) {
+    function allTickets(Holders storage _holders) internal view returns (address[] memory) {
         address[] memory merged = new address[](_holders.first.length + _holders.second.length);
         for (uint256 i = 0; i < merged.length; ++i) {
             merged[i] = i < _holders.first.length
@@ -292,7 +292,7 @@ library TypesHelpers {
             if (
                 indexInSecond < _holders.second.length && _holders.second[indexInSecond] == _holder
             ) {
-                tickets += 2;
+                tickets += 1;
             }
         }
 
