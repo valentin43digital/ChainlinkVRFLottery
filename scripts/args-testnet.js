@@ -39,16 +39,16 @@ const ProtocolConfig = {
 };
 
 const LotteryConfig = {
-  smashTimeLotteryEnabled: false,
-  smashTimeLotteryConversionThreshold: "50000000000000000000",
+  smashTimeLotteryEnabled: false, // TODO: use real value
+  smashTimeLotteryConversionThreshold: "1000000000000000000000",
   holdersLotteryEnabled: true,
-  holdersLotteryTxTrigger: 3,
+  holdersLotteryTxTrigger: 5,
   holdersLotteryMinPercent: 1,
   donationAddress: DONATE_TO,
   donationsLotteryEnabled: true,
-  minimumDonationEntries: 2,
-  minimalDonation: "100000000000000000000",
-  donationConversionThreshold: "50000000000000000000",
+  minimumDonationEntries: 3,
+  minimalDonation: "10000000000000000000000",
+  donationConversionThreshold: "1000000000000000000000",
 };
 
 module.exports = [
