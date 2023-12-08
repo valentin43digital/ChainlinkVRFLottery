@@ -10,7 +10,7 @@ import {PancakeAdapter} from "./lib/PancakeAdapter.sol";
 import {ConsumerConfig, VRFConsumerConfig} from "./lib/configs/VRFConsumerConfig.sol";
 import {DistributionConfig, ProtocolConfig} from "./lib/configs/ProtocolConfig.sol";
 import {LotteryConfig, LotteryEngineConfig} from "./lib/configs/LotteryEngineConfig.sol";
-import {TWENTY_FIVE_BITS, DAY_ONE_LIMIT, DAY_TWO_LIMIT, DAY_THREE_LIMIT, MAX_UINT256, DEAD_ADDRESS, TWENTY_FIVE_PERCENTS, SEVENTY_FIVE_PERCENTS, PRECISION, ONE_WORD, RandomWords, Fee, Counter, Holders, RuntimeCounter, LotteryType, JackpotEntry} from "./lib/ConstantsAndTypes.sol";
+import {TWENTY_FIVE_BITS, DAY_ONE_LIMIT, DAY_TWO_LIMIT, DAY_THREE_LIMIT, MAX_UINT256, DEAD_ADDRESS, TWENTY_FIVE_PERCENTS, SEVENTY_FIVE_PERCENTS, PRECISION, ONE_WORD, RandomWords, Fee, Holders, LotteryType, JackpotEntry} from "./lib/ConstantsAndTypes.sol";
 
 contract TestZ is
     Ownable,
@@ -26,7 +26,6 @@ contract TestZ is
     error TransferToZeroAddress();
     error TransferFromZeroAddress();
     error TransferAmountIsZero();
-    error ExcludedAccountCanNotCall();
     error TransferAmountExceedsAllowance();
     error CanNotDecreaseAllowance();
     error AccountAlreadyExcluded();
@@ -38,7 +37,6 @@ contract TestZ is
     error BNBWithdrawalFailed();
     error NoDonationTicketsToTransfer();
     error RecipientsLengthNotEqualToAmounts();
-    error NonForwarderCanNotCall();
 
     struct TInfo {
         uint256 tTransferAmount;
@@ -132,13 +130,12 @@ contract TestZ is
 
     mapping(uint256 => LotteryRound) public rounds;
     mapping(uint256 => mapping(address => uint256[])) private _donatorTicketIdxs;
-    mapping(uint256 => mapping(address => bool)) private _hasDonated;
     address[] private _donators;
     uint256 private _donationRound;
     uint256 private _uniqueDonatorsCounter;
+    uint256 private _holdersLotteryTxCounter;
 
     Holders private _holders;
-    Counter private _counter;
 
     IERC20 private _WBNB;
     VRFCoordinatorV2Interface private _COORDINATOR;
@@ -598,7 +595,6 @@ contract TestZ is
 
         uint256 balance = balanceOf(_participant);
 
-        
         if (balance < _balanceThreshold * 3) {
             _holders.removeSecond(_participant);
         } else {
@@ -618,14 +614,11 @@ contract TestZ is
 
     function _checkForHoldersLotteryEligibilities(
         address _transferrer,
-        address _recipient,
-        RuntimeCounter memory _runtimeCounter
+        address _recipient
     ) private {
         if (!_lotteryConfig.holdersLotteryEnabled) {
             return;
         }
-
-        _runtimeCounter.increaseHoldersLotteryCounter();
 
         _checkForHoldersLotteryEligibility(
             _transferrer,
@@ -638,47 +631,34 @@ contract TestZ is
         );
     }
 
+    function _convertSmashTimeLotteryPrize() private {
+        uint256 conversionAmount = _calculateSmashTimeLotteryConversionAmount();
+        _tokenTransfer(smashTimeLotteryPrizePoolAddress, address(this), conversionAmount, false);
+        _swapTokensForBNB(conversionAmount, smashTimeLotteryPrizePoolAddress);
+    }
+
+    function _convertDonationLotteryPrize() private {
+        uint256 conversionAmount = _calculateDonationLotteryConversionAmount();
+        _tokenTransfer(donationLotteryPrizePoolAddress, address(this), conversionAmount, false);
+        _swapTokensForBNB(conversionAmount, donationLotteryPrizePoolAddress);
+    }
+
     function _lotteryOnTransfer(
         address _transferrer,
         address _recipient,
         uint256 _amount,
         bool _takeFee
     ) private {
-        // Save configs and counter to memory to decrease amount of storage reads.
-        RuntimeCounter memory runtimeCounter = _counter.counterMemPtr();
-
-        if (
-            balanceOf(smashTimeLotteryPrizePoolAddress) >=
-            _lotteryConfig.smashTimeLotteryConversionThreshold
-        ) {
-            uint256 conversionAmount = _calculateSmashTimeLotteryConversionAmount();
-            _tokenTransfer(
-                smashTimeLotteryPrizePoolAddress,
-                address(this),
-                conversionAmount,
-                false
-            );
-            _swapTokensForBNB(conversionAmount, smashTimeLotteryPrizePoolAddress);
-        }
-
         _smashTimeLottery(_transferrer, _recipient, _amount);
 
         //transfer amount, it will take tax, burn, liquidity fee
         _tokenTransfer(_transferrer, _recipient, _amount, _takeFee);
 
-        _checkForHoldersLotteryEligibilities(_transferrer, _recipient, runtimeCounter);
+        _holdersLotteryTxCounter++;
 
-        if (
-            balanceOf(donationLotteryPrizePoolAddress) >= _lotteryConfig.donationConversionThreshold
-        ) {
-            uint256 conversionAmount = _calculateDonationLotteryConversionAmount();
-            _tokenTransfer(donationLotteryPrizePoolAddress, address(this), conversionAmount, false);
-            _swapTokensForBNB(conversionAmount, donationLotteryPrizePoolAddress);
-        }
+        _checkForHoldersLotteryEligibilities(_transferrer, _recipient);
 
         _addDonationsLotteryTickets(_transferrer, _recipient, _amount);
-
-        _counter = runtimeCounter.store();
     }
 
     function _requestRandomWords(uint32 _wordsAmount) private returns (uint256) {
@@ -710,21 +690,31 @@ contract TestZ is
     function checkUpkeep(
         bytes calldata /* checkData */
     ) external view override returns (bool upkeepNeeded, bytes memory performData) {
-        RuntimeCounter memory runtimeCounter = _counter.counterMemPtr();
         uint256 upkeepTasks = 0;
+        if (
+            balanceOf(smashTimeLotteryPrizePoolAddress) >=
+            _lotteryConfig.smashTimeLotteryConversionThreshold
+        ) {
+            upkeepTasks |= 1;
+        }
 
         if (
+            balanceOf(donationLotteryPrizePoolAddress) >= _lotteryConfig.donationConversionThreshold
+        ) {
+            upkeepTasks |= 2;
+        }
+        if (
             _lotteryConfig.holdersLotteryEnabled &&
-            runtimeCounter.holdersLotteryTxCounter() >= _lotteryConfig.holdersLotteryTxTrigger &&
+            _holdersLotteryTxCounter >= _lotteryConfig.holdersLotteryTxTrigger &&
             (_holders.first.length != 0 || _holders.second.length != 0)
         ) {
-            upkeepTasks |= 1; // Set a bit for hodl lottery
+            upkeepTasks |= 4; // Set a bit for hodl lottery
         }
         if (
             _lotteryConfig.donationsLotteryEnabled &&
             _uniqueDonatorsCounter >= _lotteryConfig.minimumDonationEntries
         ) {
-            upkeepTasks |= 2; // Set a bit for donation lottery
+            upkeepTasks |= 8; // Set a bit for donation lottery
         }
 
         if (upkeepTasks != 0) {
@@ -748,16 +738,18 @@ contract TestZ is
         );
         uint256 tasks = abi.decode(performData, (uint256));
 
-        RuntimeCounter memory runtimeCounter = _counter.counterMemPtr();
-
         if (tasks & 1 != 0) {
-            _triggerHoldersLottery(runtimeCounter);
+            _convertSmashTimeLotteryPrize();
         }
         if (tasks & 2 != 0) {
+            _convertDonationLotteryPrize();
+        }
+        if (tasks & 4 != 0) {
+            _triggerHoldersLottery();
+        }
+        if (tasks & 8 != 0) {
             _donationsLottery();
         }
-
-        _counter = runtimeCounter.store();
     }
 
     function _swapAndLiquify(uint256 contractTokenBalance) private lockTheSwap {
@@ -1049,12 +1041,12 @@ contract TestZ is
         rounds[requestId].jackpotPlayer = _recipient;
     }
 
-    function _triggerHoldersLottery(RuntimeCounter memory _runtimeCounter) private {
+    function _triggerHoldersLottery() private {
         uint256 requestId = _requestRandomWords(1);
         requestIndexToRequestId[requestCounter] = requestId;
         requestCounter += 1;
         rounds[requestId].lotteryType = LotteryType.HOLDERS;
-        _runtimeCounter.resetHoldersLotteryCounter();
+        _holdersLotteryTxCounter = 0;
     }
 
     function _addDonationsLotteryTickets(
@@ -1070,13 +1062,12 @@ contract TestZ is
             _recipient == _lotteryConfig.donationAddress &&
             _amount >= _lotteryConfig.minimalDonation
         ) {
+            if (_donatorTicketIdxs[_donationRound][_transferrer].length == 0) {
+                _uniqueDonatorsCounter++;
+            }
             uint256 length = _donators.length;
             _donators.push(_transferrer);
             _donatorTicketIdxs[_donationRound][_transferrer].push(length);
-            if (!_hasDonated[_donationRound][_transferrer]) {
-                _hasDonated[_donationRound][_transferrer] = true;
-                _uniqueDonatorsCounter++;
-            }
         }
     }
 
@@ -1117,12 +1108,11 @@ contract TestZ is
             uint256 newIdx = idx + amount;
 
             for (; idx < newIdx; ++idx) {
-                _donators.push(recipient);
-                _donatorTicketIdxs[round][recipient].push(idx);
-                if (!_hasDonated[_donationRound][recipient]) {
-                    _hasDonated[_donationRound][recipient] = true;
+                if (_donatorTicketIdxs[_donationRound][recipient].length == 0) {
                     _uniqueDonatorsCounter++;
                 }
+                _donators.push(recipient);
+                _donatorTicketIdxs[round][recipient].push(idx);
             }
         }
     }

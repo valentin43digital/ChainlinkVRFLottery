@@ -2,11 +2,6 @@
 pragma solidity ^0.8.19;
 
 type Fee is uint256;
-type Counter is uint256;
-
-struct RuntimeCounter {
-    Counter counter;
-}
 
 /**
 	Packed configuration variables of the VRF consumer contract.
@@ -102,21 +97,11 @@ uint256 constant TWO_WORD = 0x40;
 uint256 constant FIVE_WORDS = 0x100;
 uint256 constant TWENTY_FIVE_BITS = 25;
 
-Counter constant INCREMENT_HOLDER_COUNTER = Counter.wrap(1);
-
-using {addition as +} for Counter global;
-
 using TypesHelpers for Fee global;
-using TypesHelpers for Counter global;
 using TypesHelpers for Holders global;
-using TypesHelpers for RuntimeCounter global;
 using TypesHelpers for DistributionConfig global;
 using TypesHelpers for LotteryConfig global;
 using TypesHelpers for LotteryType global;
-
-function addition(Counter a, Counter b) pure returns (Counter) {
-    return Counter.wrap(Counter.unwrap(a) + Counter.unwrap(b));
-}
 
 library TypesHelpers {
     function compact(DistributionConfig memory _config) internal pure returns (Fee) {
@@ -170,32 +155,6 @@ library TypesHelpers {
         uint256 fee
     ) internal pure returns (uint256) {
         return (fee * uint32(Fee.unwrap(feeConfig))) / PRECISION;
-    }
-
-    function store(RuntimeCounter memory _counter) internal pure returns (Counter counter) {
-        return _counter.counter;
-    }
-
-    function increaseHoldersLotteryCounter(RuntimeCounter memory _counter) internal pure {
-        _counter.counter = _counter.counter + INCREMENT_HOLDER_COUNTER;
-    }
-
-    function holdersLotteryTxCounter(
-        RuntimeCounter memory _counter
-    ) internal pure returns (uint256) {
-        return uint256(uint128(Counter.unwrap(_counter.counter)));
-    }
-
-    function resetHoldersLotteryCounter(RuntimeCounter memory _counter) internal pure {
-        uint256 raw = Counter.unwrap(_counter.counter) >> 128;
-        raw <<= 128;
-        _counter.counter = Counter.wrap(raw);
-    }
-
-    function counterMemPtr(
-        Counter _counter
-    ) internal pure returns (RuntimeCounter memory runtimeCounter) {
-        runtimeCounter.counter = _counter;
     }
 
     function allTickets(Holders storage _holders) internal view returns (address[] memory) {
