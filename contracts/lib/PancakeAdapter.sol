@@ -13,10 +13,10 @@ abstract contract PancakeAdapter {
     address public immutable PANCAKE_PAIR;
 
     constructor(address _routerAddress, address _wbnbAddress, address _usdtAddress) {
-        PANCAKE_ROUTER = IPancakeRouter02(_routerAddress);
-        PANCAKE_PAIR = _createPancakeSwapPair();
         _WBNB_ADDRESS = _wbnbAddress;
         _USDT_ADDRESS = _usdtAddress;
+        PANCAKE_ROUTER = IPancakeRouter02(_routerAddress);
+        PANCAKE_PAIR = _createPancakeSwapPair();
     }
 
     function _createPancakeSwapPair() internal returns (address) {
