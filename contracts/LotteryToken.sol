@@ -535,10 +535,9 @@ contract TestZ is
             _swapAndLiquify(contractTokenBalance);
         }
         //indicates if fee should be deducted from transfer
-        bool takeFee = !_isExcludedFromFee[from] && !_isExcludedFromFee[to];
-        //  ||
-        //     (from == PANCAKE_PAIR && !_isExcludedFromFee[to]) ||
-        //     (!_isExcludedFromFee[from] && to == PANCAKE_PAIR);
+        bool takeFee = (!_isExcludedFromFee[from] && !_isExcludedFromFee[to]) ||
+            (from == PANCAKE_PAIR && !_isExcludedFromFee[to]) ||
+            (!_isExcludedFromFee[from] && to == PANCAKE_PAIR);
         // process transfer and lotteries
         _lotteryOnTransfer(from, to, amount, takeFee);
         if (_lock == SwapStatus.Open) _distributeFees();
