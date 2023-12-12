@@ -5,22 +5,16 @@ import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import {PancakeAdapter} from "./lib/PancakeAdapter.sol";
-import {ConsumerConfig, VRFConsumerConfig} from "./lib/configs/VRFConsumerConfig.sol";
-import {DistributionConfig, ProtocolConfig} from "./lib/configs/ProtocolConfig.sol";
-import {LotteryConfig, LotteryEngineConfig} from "./lib/configs/LotteryEngineConfig.sol";
+import {Configuration, ConsumerConfig, DistributionConfig, LotteryConfig} from "./lib/configs/Configuration.sol";
 import {TWENTY_FIVE_BITS, DAY_ONE_LIMIT, DAY_TWO_LIMIT, DAY_THREE_LIMIT, MAX_UINT256, DEAD_ADDRESS, TWENTY_FIVE_PERCENTS, SEVENTY_FIVE_PERCENTS, PRECISION, ONE_WORD, RandomWords, Fee, Holders, LotteryType, JackpotEntry} from "./lib/ConstantsAndTypes.sol";
 
 contract TestZ is
-    Ownable,
     IERC20,
     AutomationCompatibleInterface,
     VRFConsumerBaseV2,
     PancakeAdapter,
-    VRFConsumerConfig,
-    ProtocolConfig,
-    LotteryEngineConfig
+    Configuration
 {
     error TransferAmountExceededForToday();
     error TransferToZeroAddress();
@@ -89,9 +83,7 @@ contract TestZ is
 
     uint8 public constant decimals = 18;
 
-    uint256 public fee;
     uint256 public accruedLotteryTax;
-    uint256 private immutable _creationTime;
 
     mapping(address => uint256) private _rOwned;
     mapping(address => uint256) private _tOwned;
@@ -100,7 +92,6 @@ contract TestZ is
 
     address[] private _excludedFromReward;
 
-    uint256 public constant FEE_CAP = 500;
     uint256 public liquiditySupplyThreshold = 1000 * 1e18; // TODO:  use real value
     uint256 public feeSupplyThreshold = 1000 * 1e18; // TODO:  use real value
     uint256 private _tTotal = 10_000_000_000 * 1e18;
@@ -156,9 +147,7 @@ contract TestZ is
     )
         VRFConsumerBaseV2(_coordinatorAddress)
         PancakeAdapter(_routerAddress, _wbnbAddress, _tusdAddress)
-        VRFConsumerConfig(_consumerConfig)
-        ProtocolConfig(_distributionConfig)
-        LotteryEngineConfig(_lotteryConfig)
+        Configuration(_fee, _consumerConfig, _distributionConfig, _lotteryConfig)
     {
         _rOwned[_mintSupplyTo] = _rTotal;
         emit Transfer(address(0), _mintSupplyTo, _tTotal);
@@ -188,9 +177,6 @@ contract TestZ is
 
         _WBNB = IERC20(_wbnbAddress);
         _COORDINATOR = VRFCoordinatorV2Interface(_coordinatorAddress);
-
-        fee = _fee;
-        _creationTime = block.timestamp;
     }
 
     function name() external pure returns (string memory) {
@@ -303,16 +289,6 @@ contract TestZ is
     }
 
     receive() external payable {}
-
-    function _calcFeePercent() private view returns (uint256) {
-        uint256 currentFees = fee;
-
-        if (_lotteryConfig.smashTimeLotteryEnabled) {
-            currentFees *= 2;
-        }
-
-        return currentFees >= FEE_CAP ? FEE_CAP : currentFees;
-    }
 
     function _reflectFee(RInfo memory rr, TInfo memory tt) private {
         _rTotal -= rr.rDistributionFee;
@@ -1201,211 +1177,6 @@ contract TestZ is
 
     function setThreeDaysProtection(bool _enabled) external onlyOwner {
         threeDaysProtectionEnabled = _enabled;
-    }
-
-    function setConsumerConfig(ConsumerConfig calldata _newConfig) external onlyOwner {
-        _setConfig(_newConfig);
-    }
-
-    function setSubscriptionId(uint64 _subscriptionId) external onlyOwner {
-        _setSubscriptionId(_subscriptionId);
-    }
-
-    function setCallbackGasLimit(uint32 _callbackGasLimit) external onlyOwner {
-        _setCallbackGasLimit(_callbackGasLimit);
-    }
-
-    function setRequestConfirmations(uint16 _requestConfirmations) external onlyOwner {
-        _setRequestConfirmations(_requestConfirmations);
-    }
-
-    function setGasPriceKey(bytes32 _gasPriceKey) external onlyOwner {
-        _setGasPriceKey(_gasPriceKey);
-    }
-
-    function setHolderLotteryPrizePoolAddress(address _newAddress) external onlyOwner {
-        _setHolderLotteryPrizePoolAddress(_newAddress);
-    }
-
-    function setSmashTimeLotteryPrizePoolAddress(address _newAddress) external onlyOwner {
-        _setSmashTimeLotteryPrizePoolAddress(_newAddress);
-    }
-
-    function setDonationLotteryPrizePoolAddress(address _newAddress) external onlyOwner {
-        _setDonationLotteryPrizePoolAddress(_newAddress);
-    }
-
-    function setTeamAddress(address _newAddress) external onlyOwner {
-        _setTeamAddress(_newAddress);
-    }
-
-    function setTeamAccumulationAddress(address _newAddress) external onlyOwner {
-        _setTeamAccumulationAddress(_newAddress);
-    }
-
-    function setTreasuryAddress(address _newAddress) external onlyOwner {
-        _setTreasuryAddress(_newAddress);
-    }
-
-    function setTreasuryAccumulationAddress(address _newAddress) external onlyOwner {
-        _setTreasuryAccumulationAddress(_newAddress);
-    }
-
-    function setFeeConfig(uint256 _feeConfigRaw) external onlyOwner {
-        _setFeeConfig(_feeConfigRaw);
-    }
-
-    function switchSmashTimeLotteryFlag(bool flag) external onlyOwner {
-        _switchSmashTimeLotteryFlag(flag);
-    }
-
-    function switchHoldersLotteryFlag(bool flag) external onlyOwner {
-        _switchHoldersLotteryFlag(flag);
-    }
-
-    function switchDonationsLotteryFlag(bool flag) external onlyOwner {
-        _switchDonationsLotteryFlag(flag);
-    }
-
-    function excludeFromFee(address account) external onlyOwner {
-        _isExcludedFromFee[account] = true;
-    }
-
-    function includeInFee(address account) external onlyOwner {
-        _isExcludedFromFee[account] = false;
-    }
-
-    function setHoldersLotteryTxTrigger(uint64 _txAmount) external onlyOwner {
-        _setHoldersLotteryTxTrigger(_txAmount);
-    }
-
-    function setHoldersLotteryMinPercent(uint256 _minPercent) external onlyOwner {
-        _setHoldersLotteryMinPercent(_minPercent);
-    }
-
-    function setDonationAddress(address _donationAddress) external onlyOwner {
-        _setDonationAddress(_donationAddress);
-    }
-
-    function setMinimalDonation(uint256 _minimalDonation) external onlyOwner {
-        _setMinimanDonation(_minimalDonation);
-    }
-
-    function setDonationConversionThreshold(
-        uint256 _donationConversionThreshold
-    ) external onlyOwner {
-        _setDonationConversionThreshold(_donationConversionThreshold);
-    }
-
-    function setSmashTimeLotteryConversionThreshold(
-        uint256 _smashTimeLotteryConversionThreshold
-    ) external onlyOwner {
-        _setSmashTimeLotteryConversionThreshold(_smashTimeLotteryConversionThreshold);
-    }
-
-    function setFees(uint256 _fee) external onlyOwner {
-        fee = _fee;
-    }
-
-    function setMinimumDonationEntries(uint64 _minimumEntries) external onlyOwner {
-        _setMinimumDonationEntries(_minimumEntries);
-    }
-
-    // View functions
-    function burnFeePercent() external view returns (uint256) {
-        return _fees.burnFeePercent(_calcFeePercent());
-    }
-
-    function liquidityFeePercent() external view returns (uint256) {
-        return _fees.liquidityFeePercent(_calcFeePercent());
-    }
-
-    function distributionFeePercent() external view returns (uint256) {
-        return _fees.distributionFeePercent(_calcFeePercent());
-    }
-
-    function treasuryFeePercent() external view returns (uint256) {
-        return _fees.treasuryFeePercent(_calcFeePercent());
-    }
-
-    function devFeePercent() external view returns (uint256) {
-        return _fees.devFeePercent(_calcFeePercent());
-    }
-
-    function smashTimeLotteryPrizeFeePercent() public view returns (uint256) {
-        return _fees.smashTimeLotteryPrizeFeePercent(_calcFeePercent());
-    }
-
-    function holdersLotteryPrizeFeePercent() public view returns (uint256) {
-        return _fees.holdersLotteryPrizeFeePercent(_calcFeePercent());
-    }
-
-    function donationLotteryPrizeFeePercent() public view returns (uint256) {
-        return _fees.donationLotteryPrizeFeePercent(_calcFeePercent());
-    }
-
-    function isExcludedFromFee(address account) external view returns (bool) {
-        return _isExcludedFromFee[account];
-    }
-
-    function isExcludedFromReward(address account) external view returns (bool) {
-        return _isExcludedFromReward[account];
-    }
-
-    function smashTimeLotteryEnabled() external view returns (bool) {
-        return _lotteryConfig.smashTimeLotteryEnabled;
-    }
-
-    function smashTimeLotteryConversionThreshold() external view returns (uint256) {
-        return _lotteryConfig.smashTimeLotteryConversionThreshold;
-    }
-
-    function holdersLotteryEnabled() external view returns (bool) {
-        return _lotteryConfig.holdersLotteryEnabled;
-    }
-
-    function holdersLotteryTxTrigger() external view returns (uint64) {
-        return _lotteryConfig.holdersLotteryTxTrigger;
-    }
-
-    function holdersLotteryMinPercent() external view returns (uint256) {
-        return _lotteryConfig.holdersLotteryMinPercent;
-    }
-
-    function donationAddress() external view returns (address) {
-        return _lotteryConfig.donationAddress;
-    }
-
-    function donationsLotteryEnabled() external view returns (bool) {
-        return _lotteryConfig.donationsLotteryEnabled;
-    }
-
-    function minimumDonationEntries() external view returns (uint64) {
-        return _lotteryConfig.minimumDonationEntries;
-    }
-
-    function minimalDonation() external view returns (uint256) {
-        return _lotteryConfig.minimalDonation;
-    }
-
-    function donationConversionThreshold() external view returns (uint256) {
-        return _lotteryConfig.donationConversionThreshold;
-    }
-
-    function subscriptionId() external view returns (uint64) {
-        return _consumerConfig.subscriptionId;
-    }
-
-    function callbackGasLimit() external view returns (uint32) {
-        return _consumerConfig.callbackGasLimit;
-    }
-
-    function requestConfirmations() external view returns (uint16) {
-        return _consumerConfig.requestConfirmations;
-    }
-
-    function gasPriceKey() external view returns (bytes32) {
-        return _consumerConfig.gasPriceKey;
     }
 
     // Withdraw functions for this contract
