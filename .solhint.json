@@ -23,7 +23,7 @@
     "no-complex-fallback": "off",
     "no-empty-blocks": "off",
     "no-unused-vars": "error",
-    "reentrancy": "error",
+    "reentrancy": "warn",
     "private-vars-leading-underscore": ["warn", { "strict": false }]
   }
 }

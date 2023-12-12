@@ -83,8 +83,6 @@ contract TestZ is
 
     uint8 public constant decimals = 18;
 
-    uint256 public accruedLotteryTax;
-
     mapping(address => uint256) private _rOwned;
     mapping(address => uint256) private _tOwned;
     mapping(address => mapping(address => uint256)) private _allowances;
@@ -131,8 +129,9 @@ contract TestZ is
     IERC20 private _WBNB;
     VRFCoordinatorV2Interface private _COORDINATOR;
 
-    mapping(uint256 => uint256) public requestIndexToRequestId;
-    uint256 public requestCounter;
+    mapping(uint256 => uint256) public donationIndexToRequestId;
+    mapping(uint256 => uint256) public holdersIndexToRequestId;
+    mapping(uint256 => uint256) public smashtimeIndexToRequestId;
 
     constructor(
         address _mintSupplyTo,
@@ -281,11 +280,6 @@ contract TestZ is
             revert AmountIsGreaterThanTotalReflections();
         }
         return rAmount / _getRate();
-    }
-
-    function acquireAccruedBNBLotteryTax() external onlyOwner {
-        _WBNB.transferFrom(address(this), owner(), accruedLotteryTax);
-        accruedLotteryTax = 0;
     }
 
     receive() external payable {}
@@ -889,11 +883,10 @@ contract TestZ is
         uint256 _index,
         address _player
     ) private pure {
-        if (_tickets[_index] == _player) {
-            _seedTicketsArray(_tickets, _index + 1, _player);
-        } else {
-            _tickets[_index] = _player;
+        while (_tickets[_index] == _player) {
+            _index = (_index + 1) % 100;
         }
+        _tickets[_index] = _player;
     }
 
     function _finishSmashTimeLottery(
@@ -923,10 +916,13 @@ contract TestZ is
         if (tickets[winnerIdx] == player) {
             uint256 untaxedPrize = _calculateSmashTimeLotteryPrize();
             uint256 tax = (untaxedPrize * smashTimeLotteryPrizeFeePercent()) / maxBuyPercent;
-            accruedLotteryTax += tax;
-            _WBNB.transferFrom(donationLotteryPrizePoolAddress, address(this), tax);
+
+            _WBNB.transferFrom(smashTimeLotteryPrizePoolAddress, address(this), tax);
+            _WBNB.transfer(owner(), tax);
+
             uint256 prize = untaxedPrize - tax;
-            _WBNB.transferFrom(donationLotteryPrizePoolAddress, player, prize);
+            _WBNB.transferFrom(smashTimeLotteryPrizePoolAddress, address(this), prize);
+            _WBNB.transfer(player, prize);
 
             totalAmountWonInSmashTimeLottery += prize;
             smashTimeWins += 1;
@@ -969,7 +965,8 @@ contract TestZ is
         address winner = _donators[winnerIdx];
         uint256 prize = _calculateDonationLotteryPrize();
 
-        _WBNB.transferFrom(donationLotteryPrizePoolAddress, winner, prize);
+        _WBNB.transferFrom(donationLotteryPrizePoolAddress, address(this), prize);
+        _WBNB.transfer(winner, prize);
 
         donationLotteryWinTimes += 1;
         totalAmountWonInDonationLottery += prize;
@@ -1004,8 +1001,7 @@ contract TestZ is
         }
 
         uint256 requestId = _requestRandomWords(2);
-        requestIndexToRequestId[requestCounter] = requestId;
-        requestCounter += 1;
+        smashtimeIndexToRequestId[smashTimeWins] = requestId;
         rounds[requestId].lotteryType = LotteryType.JACKPOT;
         rounds[requestId].jackpotEntry = hundreds >= 10
             ? JackpotEntry.USD_1000
@@ -1015,8 +1011,7 @@ contract TestZ is
 
     function _triggerHoldersLottery() private {
         uint256 requestId = _requestRandomWords(1);
-        requestIndexToRequestId[requestCounter] = requestId;
-        requestCounter += 1;
+        holdersIndexToRequestId[holdersLotteryWinTimes] = requestId;
         rounds[requestId].lotteryType = LotteryType.HOLDERS;
         _holdersLotteryTxCounter = 0;
     }
@@ -1045,8 +1040,7 @@ contract TestZ is
 
     function _donationsLottery() private {
         uint256 requestId = _requestRandomWords(1);
-        requestIndexToRequestId[requestCounter] = requestId;
-        requestCounter += 1;
+        donationIndexToRequestId[donationLotteryWinTimes] = requestId;
         rounds[requestId].lotteryType = LotteryType.DONATION;
         _uniqueDonatorsCounter = 0;
     }
