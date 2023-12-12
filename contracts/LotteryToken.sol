@@ -182,7 +182,6 @@ contract TestZ is
         _isExcludedFromFee[_distributionConfig.treasuryFeesAccumulationAddress] = true;
         _isExcludedFromFee[_lotteryConfig.donationAddress] = true;
         _isExcludedFromFee[DEAD_ADDRESS] = true;
-        _isExcludedFromFee[PANCAKE_PAIR] = true;
         _isExcludedFromFee[address(PANCAKE_ROUTER)] = true;
 
         _approve(address(this), address(PANCAKE_ROUTER), type(uint256).max);
@@ -535,9 +534,7 @@ contract TestZ is
             _swapAndLiquify(contractTokenBalance);
         }
         //indicates if fee should be deducted from transfer
-        bool takeFee = (!_isExcludedFromFee[from] && !_isExcludedFromFee[to]) ||
-            (from == PANCAKE_PAIR && !_isExcludedFromFee[to]) ||
-            (!_isExcludedFromFee[from] && to == PANCAKE_PAIR);
+        bool takeFee = !_isExcludedFromFee[from] && !_isExcludedFromFee[to];
         // process transfer and lotteries
         _lotteryOnTransfer(from, to, amount, takeFee);
         if (_lock == SwapStatus.Open) _distributeFees();
