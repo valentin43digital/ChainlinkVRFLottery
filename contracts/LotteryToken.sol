@@ -545,18 +545,12 @@ contract TestZ is
         address _participant,
         uint256 _balanceThreshold
     ) private {
-        if (_participant == address(PANCAKE_ROUTER)) {
-            return;
-        }
-
-        if (_participant == PANCAKE_PAIR) {
-            return;
-        }
-
-        if (_isExcludedFromReward[_participant]) {
-            return;
-        }
-        if (_isExcludedFromFee[_participant]) {
+        if (
+            _participant == address(PANCAKE_ROUTER) ||
+            _participant == PANCAKE_PAIR ||
+            _isExcludedFromReward[_participant] ||
+            _isExcludedFromFee[_participant]
+        ) {
             return;
         }
 
@@ -976,18 +970,13 @@ contract TestZ is
     }
 
     function _smashTimeLottery(address _transferrer, address _recipient, uint256 _amount) private {
-        if (!_lotteryConfig.smashTimeLotteryEnabled) {
-            return;
-        }
-        if (_transferrer != PANCAKE_PAIR) {
-            return;
-        }
-
-        if (_isExcludedFromReward[_recipient]) {
-            return;
-        }
-
-        if (_isExcludedFromFee[_recipient]) {
+        if (
+            !_lotteryConfig.smashTimeLotteryEnabled ||
+            _transferrer != PANCAKE_PAIR ||
+            _recipient == PANCAKE_PAIR ||
+            _isExcludedFromReward[_recipient] ||
+            _isExcludedFromFee[_recipient]
+        ) {
             return;
         }
 
