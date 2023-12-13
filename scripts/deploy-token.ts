@@ -36,7 +36,7 @@ async function main() {
     }
 
     const LotteryConfig = {
-        smashTimeLotteryEnabled: false,
+        smashTimeLotteryEnabled: true,
         smashTimeLotteryConversionThreshold: ethers.utils.parseEther("1000"), // TODO: use real value for mainnet
         holdersLotteryEnabled: true,
         holdersLotteryTxTrigger: 5, // TODO: use real value for mainnet

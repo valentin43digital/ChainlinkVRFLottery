@@ -64,7 +64,6 @@ contract TestZ is
     }
 
     modifier lockTheSwap() {
-        require(_lock == SwapStatus.Open, "Swap: LOCKED");
         _lock = SwapStatus.Locked;
         _;
         _lock = SwapStatus.Open;
@@ -72,7 +71,6 @@ contract TestZ is
 
     modifier swapLockOnPairCall() {
         if (msg.sender == PANCAKE_PAIR) {
-            require(_lock == SwapStatus.Open, "Swap: LOCKED");
             _lock = SwapStatus.Locked;
             _;
             _lock = SwapStatus.Open;

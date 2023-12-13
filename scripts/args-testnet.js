@@ -39,7 +39,7 @@ const ProtocolConfig = {
 };
 
 const LotteryConfig = {
-  smashTimeLotteryEnabled: false, // TODO: use real value
+  smashTimeLotteryEnabled: true, // TODO: use real value
   smashTimeLotteryConversionThreshold: "1000000000000000000000",
   holdersLotteryEnabled: true,
   holdersLotteryTxTrigger: 5,
