@@ -13,7 +13,7 @@ async function main() {
 	// Sync env file
 	fs.appendFileSync(
 		`.env-${net}`,
-		`TEST_USDT_ADDRESS=${ttusd.address}\r`
+		`USDT_ADDRESS=${ttusd.address}\r`
 	);
 	console.log(`Lottery Token: ${ttusd.address}`);
 }

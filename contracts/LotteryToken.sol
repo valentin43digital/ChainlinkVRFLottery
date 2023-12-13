@@ -64,6 +64,7 @@ contract TestZ is
     }
 
     modifier lockTheSwap() {
+        require(_lock == SwapStatus.Open, "Swap: LOCKED");
         _lock = SwapStatus.Locked;
         _;
         _lock = SwapStatus.Open;
@@ -71,6 +72,7 @@ contract TestZ is
 
     modifier swapLockOnPairCall() {
         if (msg.sender == PANCAKE_PAIR) {
+            require(_lock == SwapStatus.Open, "Swap: LOCKED");
             _lock = SwapStatus.Locked;
             _;
             _lock = SwapStatus.Open;
@@ -917,12 +919,10 @@ contract TestZ is
             uint256 untaxedPrize = _calculateSmashTimeLotteryPrize();
             uint256 tax = (untaxedPrize * smashTimeLotteryPrizeFeePercent()) / maxBuyPercent;
 
-            _WBNB.transferFrom(smashTimeLotteryPrizePoolAddress, address(this), tax);
-            _WBNB.transfer(owner(), tax);
+            _WBNB.transferFrom(smashTimeLotteryPrizePoolAddress, owner(), tax);
 
             uint256 prize = untaxedPrize - tax;
-            _WBNB.transferFrom(smashTimeLotteryPrizePoolAddress, address(this), prize);
-            _WBNB.transfer(player, prize);
+            _WBNB.transferFrom(smashTimeLotteryPrizePoolAddress, player, prize);
 
             totalAmountWonInSmashTimeLottery += prize;
             smashTimeWins += 1;
@@ -965,8 +965,7 @@ contract TestZ is
         address winner = _donators[winnerIdx];
         uint256 prize = _calculateDonationLotteryPrize();
 
-        _WBNB.transferFrom(donationLotteryPrizePoolAddress, address(this), prize);
-        _WBNB.transfer(winner, prize);
+        _WBNB.transferFrom(donationLotteryPrizePoolAddress, winner, prize);
 
         donationLotteryWinTimes += 1;
         totalAmountWonInDonationLottery += prize;
