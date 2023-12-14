@@ -48,7 +48,7 @@ async function main() {
         donationConversionThreshold: ethers.utils.parseEther("1000"), // TODO: use real value for mainnet
     }
 
-    const LotteryTokenFactory = await ethers.getContractFactory("ABC") // TODO: use real value for mainnet
+    const LotteryTokenFactory = await ethers.getContractFactory("TestZ") // TODO: use real value for mainnet
     const token = await LotteryTokenFactory.deploy(
         config.MINT_TO,
         config.VRF_COORDINATOR_ADDRESS,

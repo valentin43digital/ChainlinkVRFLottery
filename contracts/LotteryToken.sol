@@ -9,7 +9,7 @@ import {PancakeAdapter} from "./lib/PancakeAdapter.sol";
 import {Configuration, ConsumerConfig, DistributionConfig, LotteryConfig} from "./lib/configs/Configuration.sol";
 import {TWENTY_FIVE_BITS, DAY_ONE_LIMIT, DAY_TWO_LIMIT, DAY_THREE_LIMIT, MAX_UINT256, DEAD_ADDRESS, TWENTY_FIVE_PERCENTS, SEVENTY_FIVE_PERCENTS, PRECISION, ONE_WORD, RandomWords, Fee, Holders, LotteryType, JackpotEntry} from "./lib/ConstantsAndTypes.sol";
 
-contract ABC is
+contract TestZ is
     IERC20,
     AutomationCompatibleInterface,
     VRFConsumerBaseV2,
@@ -182,11 +182,11 @@ contract ABC is
     }
 
     function name() external pure returns (string memory) {
-        return "ABC Token"; // TODO: use real value
+        return "TestZ Token"; // TODO: use real value
     }
 
     function symbol() external pure returns (string memory) {
-        return "ABC"; // TODO: use real value
+        return "TestZ"; // TODO: use real value
     }
 
     function totalSupply() external view returns (uint256) {
