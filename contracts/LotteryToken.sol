@@ -107,7 +107,7 @@ contract TestZ is
     uint256 public totalAmountWonInSmashTimeLottery;
     uint256 public totalAmountWonInDonationLottery;
     uint256 public totalAmountWonInHoldersLottery;
-    address public forwarderAddress;
+    // address public forwarderAddress;
 
     struct LotteryRound {
         uint256 prize;
@@ -135,8 +135,6 @@ contract TestZ is
 
     uint256 public donationLotteryBNBPrize;
     uint256 public smashtimeLotteryBNBPrize;
-    uint256 public donationLotteryPrizePoolAmount;
-    uint256 public smashtimeLotteryPrizePoolAmount;
 
     constructor(
         address _mintSupplyTo,
@@ -604,7 +602,6 @@ contract TestZ is
         uint256 conversionAmount = _calculateSmashTimeLotteryConversionAmount();
         _tokenTransfer(smashTimeLotteryPrizePoolAddress, address(this), conversionAmount, false);
         uint256 convertedBNB = _swapTokensForBNB(conversionAmount);
-        smashtimeLotteryPrizePoolAmount -= conversionAmount;
         smashtimeLotteryBNBPrize += convertedBNB;
     }
 
@@ -612,7 +609,6 @@ contract TestZ is
         uint256 conversionAmount = _calculateDonationLotteryConversionAmount();
         _tokenTransfer(donationLotteryPrizePoolAddress, address(this), conversionAmount, false);
         uint256 convertedBNB = _swapTokensForBNB(conversionAmount);
-        donationLotteryPrizePoolAmount -= conversionAmount;
         donationLotteryBNBPrize += convertedBNB;
     }
 
@@ -626,9 +622,6 @@ contract TestZ is
 
         //transfer amount, it will take tax, burn, liquidity fee
         _tokenTransfer(_transferrer, _recipient, _amount, _takeFee);
-
-        smashtimeLotteryPrizePoolAmount = balanceOf(smashTimeLotteryPrizePoolAddress);
-        donationLotteryPrizePoolAmount = balanceOf(donationLotteryPrizePoolAddress);
 
         _checkForHoldersLotteryEligibilities(_transferrer, _recipient);
 
@@ -665,11 +658,16 @@ contract TestZ is
         bytes calldata /* checkData */
     ) external view override returns (bool upkeepNeeded, bytes memory performData) {
         uint256 upkeepTasks = 0;
-        if (smashtimeLotteryPrizePoolAmount >= _lotteryConfig.smashTimeLotteryConversionThreshold) {
+        if (
+            balanceOf(smashTimeLotteryPrizePoolAddress) >=
+            _lotteryConfig.smashTimeLotteryConversionThreshold
+        ) {
             upkeepTasks |= 1;
         }
 
-        if (donationLotteryPrizePoolAmount >= _lotteryConfig.donationConversionThreshold) {
+        if (
+            balanceOf(donationLotteryPrizePoolAddress) >= _lotteryConfig.donationConversionThreshold
+        ) {
             upkeepTasks |= 2;
         }
         if (
@@ -693,18 +691,15 @@ contract TestZ is
         return (false, bytes(""));
     }
 
-    /// @notice Set the address that `performUpkeep` is called from
-    /// @dev Only callable by the owner
-    /// @param _forwarderAddress the address to set
-    function setForwarderAddress(address _forwarderAddress) external onlyOwner {
-        forwarderAddress = _forwarderAddress;
-    }
+    // function setForwarderAddress(address _forwarderAddress) external onlyOwner {
+    //     forwarderAddress = _forwarderAddress;
+    // }
 
     function performUpkeep(bytes calldata performData) external override {
-        require(
-            msg.sender == forwarderAddress,
-            "This address does not have permission to call performUpkeep"
-        );
+        // require(
+        //     msg.sender == forwarderAddress,
+        //     "This address does not have permission to call performUpkeep"
+        // );
         uint256 tasks = abi.decode(performData, (uint256));
 
         if (tasks & 1 != 0) {
