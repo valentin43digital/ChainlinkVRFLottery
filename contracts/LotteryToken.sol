@@ -135,6 +135,8 @@ contract TestZ is
 
     uint256 public donationLotteryBNBPrize;
     uint256 public smashtimeLotteryBNBPrize;
+    uint256 public donationLotteryPrizePoolAmount;
+    uint256 public smashtimeLotteryPrizePoolAmount;
 
     constructor(
         address _mintSupplyTo,
@@ -598,17 +600,21 @@ contract TestZ is
         );
     }
 
-    // function _convertSmashTimeLotteryPrize() private {
-    //     uint256 conversionAmount = _calculateSmashTimeLotteryConversionAmount();
-    //     _tokenTransfer(smashTimeLotteryPrizePoolAddress, address(this), conversionAmount, false);
-    //     _swapTokensForBNB(conversionAmount, smashTimeLotteryPrizePoolAddress);
-    // }
+    function _convertSmashTimeLotteryPrize() private {
+        uint256 conversionAmount = _calculateSmashTimeLotteryConversionAmount();
+        _tokenTransfer(smashTimeLotteryPrizePoolAddress, address(this), conversionAmount, false);
+        uint256 convertedBNB = _swapTokensForBNB(conversionAmount);
+        smashtimeLotteryPrizePoolAmount -= conversionAmount;
+        smashtimeLotteryBNBPrize += convertedBNB;
+    }
 
-    // function _convertDonationLotteryPrize() private {
-    //     uint256 conversionAmount = _calculateDonationLotteryConversionAmount();
-    //     _tokenTransfer(donationLotteryPrizePoolAddress, address(this), conversionAmount, false);
-    //     _swapTokensForBNB(conversionAmount, donationLotteryPrizePoolAddress);
-    // }
+    function _convertDonationLotteryPrize() private {
+        uint256 conversionAmount = _calculateDonationLotteryConversionAmount();
+        _tokenTransfer(donationLotteryPrizePoolAddress, address(this), conversionAmount, false);
+        uint256 convertedBNB = _swapTokensForBNB(conversionAmount);
+        donationLotteryPrizePoolAmount -= conversionAmount;
+        donationLotteryBNBPrize += convertedBNB;
+    }
 
     function _lotteryOnTransfer(
         address _transferrer,
@@ -616,33 +622,13 @@ contract TestZ is
         uint256 _amount,
         bool _takeFee
     ) private {
-        if (
-            balanceOf(smashTimeLotteryPrizePoolAddress) >=
-            _lotteryConfig.smashTimeLotteryConversionThreshold
-        ) {
-            uint256 conversionAmount = _calculateSmashTimeLotteryConversionAmount();
-            _tokenTransfer(
-                smashTimeLotteryPrizePoolAddress,
-                address(this),
-                conversionAmount,
-                false
-            );
-            uint256 convertedBNB = _swapTokensForBNB(conversionAmount);
-            smashtimeLotteryBNBPrize += convertedBNB;
-        }
         _smashTimeLottery(_transferrer, _recipient, _amount);
 
         //transfer amount, it will take tax, burn, liquidity fee
         _tokenTransfer(_transferrer, _recipient, _amount, _takeFee);
 
-        if (
-            balanceOf(donationLotteryPrizePoolAddress) >= _lotteryConfig.donationConversionThreshold
-        ) {
-            uint256 conversionAmount = _calculateDonationLotteryConversionAmount();
-            _tokenTransfer(donationLotteryPrizePoolAddress, address(this), conversionAmount, false);
-            uint256 convertedBNB = _swapTokensForBNB(conversionAmount);
-            donationLotteryBNBPrize += convertedBNB;
-        }
+        smashtimeLotteryPrizePoolAmount = balanceOf(smashTimeLotteryPrizePoolAddress);
+        donationLotteryPrizePoolAmount = balanceOf(donationLotteryPrizePoolAddress);
 
         _checkForHoldersLotteryEligibilities(_transferrer, _recipient);
 
@@ -679,30 +665,25 @@ contract TestZ is
         bytes calldata /* checkData */
     ) external view override returns (bool upkeepNeeded, bytes memory performData) {
         uint256 upkeepTasks = 0;
-        // if (
-        //     balanceOf(smashTimeLotteryPrizePoolAddress) >=
-        //     _lotteryConfig.smashTimeLotteryConversionThreshold
-        // ) {
-        //     upkeepTasks |= 1;
-        // }
+        if (smashtimeLotteryPrizePoolAmount >= _lotteryConfig.smashTimeLotteryConversionThreshold) {
+            upkeepTasks |= 1;
+        }
 
-        // if (
-        //     balanceOf(donationLotteryPrizePoolAddress) >= _lotteryConfig.donationConversionThreshold
-        // ) {
-        //     upkeepTasks |= 2;
-        // }
+        if (donationLotteryPrizePoolAmount >= _lotteryConfig.donationConversionThreshold) {
+            upkeepTasks |= 2;
+        }
         if (
             _lotteryConfig.holdersLotteryEnabled &&
             _holdersLotteryTxCounter >= _lotteryConfig.holdersLotteryTxTrigger &&
             _holders.first.length != 0
         ) {
-            upkeepTasks |= 1; // Set a bit for hodl lottery
+            upkeepTasks |= 4; // Set a bit for hodl lottery
         }
         if (
             _lotteryConfig.donationsLotteryEnabled &&
             _uniqueDonatorsCounter >= _lotteryConfig.minimumDonationEntries
         ) {
-            upkeepTasks |= 2; // Set a bit for donation lottery
+            upkeepTasks |= 8; // Set a bit for donation lottery
         }
 
         if (upkeepTasks != 0) {
@@ -726,16 +707,16 @@ contract TestZ is
         );
         uint256 tasks = abi.decode(performData, (uint256));
 
-        // if (tasks & 1 != 0) {
-        //     _convertSmashTimeLotteryPrize();
-        // }
-        // if (tasks & 2 != 0) {
-        //     _convertDonationLotteryPrize();
-        // }
         if (tasks & 1 != 0) {
-            _triggerHoldersLottery();
+            _convertSmashTimeLotteryPrize();
         }
         if (tasks & 2 != 0) {
+            _convertDonationLotteryPrize();
+        }
+        if (tasks & 4 != 0) {
+            _triggerHoldersLottery();
+        }
+        if (tasks & 8 != 0) {
             _donationsLottery();
         }
     }
