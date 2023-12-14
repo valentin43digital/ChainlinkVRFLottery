@@ -14,12 +14,6 @@ interface IConfiguration {
 
     function setGasPriceKey(bytes32 _gasPriceKey) external;
 
-    function setHolderLotteryPrizePoolAddress(address _newAddress) external;
-
-    function setSmashTimeLotteryPrizePoolAddress(address _newAddress) external;
-
-    function setDonationLotteryPrizePoolAddress(address _newAddress) external;
-
     function setTeamAddress(address _newAddress) external;
 
     function setTeamAccumulationAddress(address _newAddress) external;

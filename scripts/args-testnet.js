@@ -57,7 +57,7 @@ module.exports = [
   ROUTER_ADDRESS,
   WBNB_ADDRESS,
   USDT_ADDRESS,
-  400,
+  200,
   ConsumerConfig,
   ProtocolConfig,
   LotteryConfig,

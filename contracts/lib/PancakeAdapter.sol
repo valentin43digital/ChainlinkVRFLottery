@@ -42,7 +42,7 @@ abstract contract PancakeAdapter {
         path[1] = _WBNB_ADDRESS;
 
         // make the swap
-        PANCAKE_ROUTER.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        PANCAKE_ROUTER.swapExactTokensForETHSupportingFeeOnTransferTokens(
             _tokensAmount,
             0, // accept any amount of ETH
             path,
@@ -62,7 +62,7 @@ abstract contract PancakeAdapter {
         path[1] = _WBNB_ADDRESS;
 
         // make the swap
-        PANCAKE_ROUTER.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        PANCAKE_ROUTER.swapExactTokensForETHSupportingFeeOnTransferTokens(
             _tokensAmount,
             0, // accept any amount of ETH
             path,

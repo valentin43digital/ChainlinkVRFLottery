@@ -103,7 +103,7 @@ describe("Lottery Token tests", () => {
             donationLotteryTxTrigger: 5,
             minimalDonation: ethers.utils.parseEther("1000"),
         }
-        const LotteryTokenFactory = await ethers.getContractFactory("TestZ");
+        const LotteryTokenFactory = await ethers.getContractFactory("ABC");
 
         token = await LotteryTokenFactory.deploy(
             admin.address,

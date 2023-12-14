@@ -9,7 +9,7 @@ import {PancakeAdapter} from "./lib/PancakeAdapter.sol";
 import {Configuration, ConsumerConfig, DistributionConfig, LotteryConfig} from "./lib/configs/Configuration.sol";
 import {TWENTY_FIVE_BITS, DAY_ONE_LIMIT, DAY_TWO_LIMIT, DAY_THREE_LIMIT, MAX_UINT256, DEAD_ADDRESS, TWENTY_FIVE_PERCENTS, SEVENTY_FIVE_PERCENTS, PRECISION, ONE_WORD, RandomWords, Fee, Holders, LotteryType, JackpotEntry} from "./lib/ConstantsAndTypes.sol";
 
-contract TestZ is
+contract ABC is
     IERC20,
     AutomationCompatibleInterface,
     VRFConsumerBaseV2,
@@ -129,9 +129,9 @@ contract TestZ is
     IERC20 private _WBNB;
     VRFCoordinatorV2Interface private _COORDINATOR;
 
-    mapping(uint256 => uint256) public donationIndexToRequestId;
-    mapping(uint256 => uint256) public holdersIndexToRequestId;
-    mapping(uint256 => uint256) public smashtimeIndexToRequestId;
+    mapping(uint256 => uint256) public donationRequestId;
+    mapping(uint256 => uint256) public holderRequestId;
+    mapping(uint256 => uint256) public smashtimeRequestId;
 
     constructor(
         address _mintSupplyTo,
@@ -172,18 +172,18 @@ contract TestZ is
         _isExcludedFromFee[DEAD_ADDRESS] = true;
         _isExcludedFromFee[address(PANCAKE_ROUTER)] = true;
 
-        _approve(address(this), address(PANCAKE_ROUTER), type(uint256).max);
+        _approve(address(this), address(PANCAKE_ROUTER), MAX_UINT256);
 
         _WBNB = IERC20(_wbnbAddress);
         _COORDINATOR = VRFCoordinatorV2Interface(_coordinatorAddress);
     }
 
     function name() external pure returns (string memory) {
-        return "TestZ Token"; // TODO: use real value
+        return "ABC Token"; // TODO: use real value
     }
 
     function symbol() external pure returns (string memory) {
-        return "TestZ"; // TODO: use real value
+        return "ABC"; // TODO: use real value
     }
 
     function totalSupply() external view returns (uint256) {
@@ -497,6 +497,7 @@ contract TestZ is
             contractTokenBalance >= liquiditySupplyThreshold &&
             _lock == SwapStatus.Open &&
             from != PANCAKE_PAIR &&
+            to != PANCAKE_PAIR &&
             swapAndLiquifyEnabled
         ) {
             contractTokenBalance = liquiditySupplyThreshold;
@@ -838,15 +839,15 @@ contract TestZ is
         LotteryRound storage round = rounds[_requestId];
 
         if (round.lotteryType == LotteryType.JACKPOT) {
-            _finishSmashTimeLottery(round, _random);
+            _finishSmashTimeLottery(_requestId, round, _random);
         }
 
         if (round.lotteryType == LotteryType.HOLDERS) {
-            _finishHoldersLottery(round, _random.first);
+            _finishHoldersLottery(_requestId, round, _random.first);
         }
 
         if (round.lotteryType == LotteryType.DONATION) {
-            _finishDonationLottery(round, _random.first);
+            _finishDonationLottery(_requestId, round, _random.first);
         }
     }
 
@@ -884,6 +885,7 @@ contract TestZ is
     }
 
     function _finishSmashTimeLottery(
+        uint256 _requestId,
         LotteryRound storage _round,
         RandomWords memory _random
     ) private {
@@ -917,6 +919,7 @@ contract TestZ is
             _WBNB.transferFrom(smashTimeLotteryPrizePoolAddress, player, prize);
 
             totalAmountWonInSmashTimeLottery += prize;
+            smashtimeRequestId[smashTimeWins] = _requestId;
             smashTimeWins += 1;
             _round.winner = player;
             _round.prize = prize;
@@ -925,7 +928,11 @@ contract TestZ is
         _round.lotteryType = LotteryType.FINISHED_JACKPOT;
     }
 
-    function _finishHoldersLottery(LotteryRound storage _round, uint256 _random) private {
+    function _finishHoldersLottery(
+        uint256 _requestId,
+        LotteryRound storage _round,
+        uint256 _random
+    ) private {
         uint256 winnerIdx;
         uint256 holdersLength = _holders.first.length + _holders.second.length;
 
@@ -939,7 +946,8 @@ contract TestZ is
         address winner = _holders.allTickets()[winnerIdx];
         uint256 prize = _calculateHoldersLotteryPrize();
 
-        _tokenTransfer(holderLotteryPrizePoolAddress, winner, prize, false);
+        _tokenTransfer(address(this), winner, prize, false);
+        holderRequestId[holdersLotteryWinTimes] = _requestId;
 
         holdersLotteryWinTimes += 1;
         totalAmountWonInHoldersLottery += prize;
@@ -948,7 +956,11 @@ contract TestZ is
         _round.lotteryType = LotteryType.FINISHED_HOLDERS;
     }
 
-    function _finishDonationLottery(LotteryRound storage _round, uint256 _random) private {
+    function _finishDonationLottery(
+        uint256 _requestId,
+        LotteryRound storage _round,
+        uint256 _random
+    ) private {
         uint256 winnerIdx;
         uint256 donatorsLength = _donators.length;
         assembly {
@@ -958,6 +970,7 @@ contract TestZ is
         uint256 prize = _calculateDonationLotteryPrize();
 
         _WBNB.transferFrom(donationLotteryPrizePoolAddress, winner, prize);
+        donationRequestId[donationLotteryWinTimes] = _requestId;
 
         donationLotteryWinTimes += 1;
         totalAmountWonInDonationLottery += prize;
@@ -987,7 +1000,6 @@ contract TestZ is
         }
 
         uint256 requestId = _requestRandomWords(2);
-        smashtimeIndexToRequestId[smashTimeWins] = requestId;
         rounds[requestId].lotteryType = LotteryType.JACKPOT;
         rounds[requestId].jackpotEntry = hundreds >= 10
             ? JackpotEntry.USD_1000
@@ -997,7 +1009,6 @@ contract TestZ is
 
     function _triggerHoldersLottery() private {
         uint256 requestId = _requestRandomWords(1);
-        holdersIndexToRequestId[holdersLotteryWinTimes] = requestId;
         rounds[requestId].lotteryType = LotteryType.HOLDERS;
         _holdersLotteryTxCounter = 0;
     }
@@ -1026,7 +1037,6 @@ contract TestZ is
 
     function _donationsLottery() private {
         uint256 requestId = _requestRandomWords(1);
-        donationIndexToRequestId[donationLotteryWinTimes] = requestId;
         rounds[requestId].lotteryType = LotteryType.DONATION;
         _uniqueDonatorsCounter = 0;
     }
