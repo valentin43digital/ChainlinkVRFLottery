@@ -133,6 +133,9 @@ contract ABC is
     mapping(uint256 => uint256) public holderRequestId;
     mapping(uint256 => uint256) public smashtimeRequestId;
 
+    uint256 public donationLotteryBNBPrize;
+    uint256 public smashtimeLotteryBNBPrize;
+
     constructor(
         address _mintSupplyTo,
         address _coordinatorAddress,
@@ -595,17 +598,17 @@ contract ABC is
         );
     }
 
-    function _convertSmashTimeLotteryPrize() private {
-        uint256 conversionAmount = _calculateSmashTimeLotteryConversionAmount();
-        _tokenTransfer(smashTimeLotteryPrizePoolAddress, address(this), conversionAmount, false);
-        _swapTokensForBNB(conversionAmount, smashTimeLotteryPrizePoolAddress);
-    }
+    // function _convertSmashTimeLotteryPrize() private {
+    //     uint256 conversionAmount = _calculateSmashTimeLotteryConversionAmount();
+    //     _tokenTransfer(smashTimeLotteryPrizePoolAddress, address(this), conversionAmount, false);
+    //     _swapTokensForBNB(conversionAmount, smashTimeLotteryPrizePoolAddress);
+    // }
 
-    function _convertDonationLotteryPrize() private {
-        uint256 conversionAmount = _calculateDonationLotteryConversionAmount();
-        _tokenTransfer(donationLotteryPrizePoolAddress, address(this), conversionAmount, false);
-        _swapTokensForBNB(conversionAmount, donationLotteryPrizePoolAddress);
-    }
+    // function _convertDonationLotteryPrize() private {
+    //     uint256 conversionAmount = _calculateDonationLotteryConversionAmount();
+    //     _tokenTransfer(donationLotteryPrizePoolAddress, address(this), conversionAmount, false);
+    //     _swapTokensForBNB(conversionAmount, donationLotteryPrizePoolAddress);
+    // }
 
     function _lotteryOnTransfer(
         address _transferrer,
@@ -613,10 +616,33 @@ contract ABC is
         uint256 _amount,
         bool _takeFee
     ) private {
+        if (
+            balanceOf(smashTimeLotteryPrizePoolAddress) >=
+            _lotteryConfig.smashTimeLotteryConversionThreshold
+        ) {
+            uint256 conversionAmount = _calculateSmashTimeLotteryConversionAmount();
+            _tokenTransfer(
+                smashTimeLotteryPrizePoolAddress,
+                address(this),
+                conversionAmount,
+                false
+            );
+            uint256 convertedBNB = _swapTokensForBNB(conversionAmount);
+            smashtimeLotteryBNBPrize += convertedBNB;
+        }
         _smashTimeLottery(_transferrer, _recipient, _amount);
 
         //transfer amount, it will take tax, burn, liquidity fee
         _tokenTransfer(_transferrer, _recipient, _amount, _takeFee);
+
+        if (
+            balanceOf(donationLotteryPrizePoolAddress) >= _lotteryConfig.donationConversionThreshold
+        ) {
+            uint256 conversionAmount = _calculateDonationLotteryConversionAmount();
+            _tokenTransfer(donationLotteryPrizePoolAddress, address(this), conversionAmount, false);
+            uint256 convertedBNB = _swapTokensForBNB(conversionAmount);
+            donationLotteryBNBPrize += convertedBNB;
+        }
 
         _checkForHoldersLotteryEligibilities(_transferrer, _recipient);
 
@@ -653,30 +679,30 @@ contract ABC is
         bytes calldata /* checkData */
     ) external view override returns (bool upkeepNeeded, bytes memory performData) {
         uint256 upkeepTasks = 0;
-        if (
-            balanceOf(smashTimeLotteryPrizePoolAddress) >=
-            _lotteryConfig.smashTimeLotteryConversionThreshold
-        ) {
-            upkeepTasks |= 1;
-        }
+        // if (
+        //     balanceOf(smashTimeLotteryPrizePoolAddress) >=
+        //     _lotteryConfig.smashTimeLotteryConversionThreshold
+        // ) {
+        //     upkeepTasks |= 1;
+        // }
 
-        if (
-            balanceOf(donationLotteryPrizePoolAddress) >= _lotteryConfig.donationConversionThreshold
-        ) {
-            upkeepTasks |= 2;
-        }
+        // if (
+        //     balanceOf(donationLotteryPrizePoolAddress) >= _lotteryConfig.donationConversionThreshold
+        // ) {
+        //     upkeepTasks |= 2;
+        // }
         if (
             _lotteryConfig.holdersLotteryEnabled &&
             _holdersLotteryTxCounter >= _lotteryConfig.holdersLotteryTxTrigger &&
-            (_holders.first.length != 0 || _holders.second.length != 0)
+            _holders.first.length != 0
         ) {
-            upkeepTasks |= 4; // Set a bit for hodl lottery
+            upkeepTasks |= 1; // Set a bit for hodl lottery
         }
         if (
             _lotteryConfig.donationsLotteryEnabled &&
             _uniqueDonatorsCounter >= _lotteryConfig.minimumDonationEntries
         ) {
-            upkeepTasks |= 8; // Set a bit for donation lottery
+            upkeepTasks |= 2; // Set a bit for donation lottery
         }
 
         if (upkeepTasks != 0) {
@@ -700,16 +726,16 @@ contract ABC is
         );
         uint256 tasks = abi.decode(performData, (uint256));
 
+        // if (tasks & 1 != 0) {
+        //     _convertSmashTimeLotteryPrize();
+        // }
+        // if (tasks & 2 != 0) {
+        //     _convertDonationLotteryPrize();
+        // }
         if (tasks & 1 != 0) {
-            _convertSmashTimeLotteryPrize();
-        }
-        if (tasks & 2 != 0) {
-            _convertDonationLotteryPrize();
-        }
-        if (tasks & 4 != 0) {
             _triggerHoldersLottery();
         }
-        if (tasks & 8 != 0) {
+        if (tasks & 2 != 0) {
             _donationsLottery();
         }
     }
@@ -852,8 +878,7 @@ contract ABC is
     }
 
     function _calculateSmashTimeLotteryPrize() private view returns (uint256) {
-        return
-            (_WBNB.balanceOf(smashTimeLotteryPrizePoolAddress) * TWENTY_FIVE_PERCENTS) / PRECISION;
+        return (smashtimeLotteryBNBPrize * TWENTY_FIVE_PERCENTS) / PRECISION;
     }
 
     function _calculateHoldersLotteryPrize() private view returns (uint256) {
@@ -861,8 +886,7 @@ contract ABC is
     }
 
     function _calculateDonationLotteryPrize() private view returns (uint256) {
-        return
-            (_WBNB.balanceOf(donationLotteryPrizePoolAddress) * SEVENTY_FIVE_PERCENTS) / PRECISION;
+        return (donationLotteryBNBPrize * SEVENTY_FIVE_PERCENTS) / PRECISION;
     }
 
     function _calculateDonationLotteryConversionAmount() private view returns (uint256) {
@@ -913,11 +937,15 @@ contract ABC is
             uint256 untaxedPrize = _calculateSmashTimeLotteryPrize();
             uint256 tax = (untaxedPrize * smashTimeLotteryPrizeFeePercent()) / maxBuyPercent;
 
-            _WBNB.transferFrom(smashTimeLotteryPrizePoolAddress, owner(), tax);
+            require(address(this).balance >= untaxedPrize, "Insufficient balance");
+            (bool taxSent, ) = owner().call{value: tax}("");
+            require(taxSent, "Failed to send tax BNB in smashtime lottery");
 
             uint256 prize = untaxedPrize - tax;
-            _WBNB.transferFrom(smashTimeLotteryPrizePoolAddress, player, prize);
+            (bool prizeSent, ) = player.call{value: prize}("");
+            require(prizeSent, "Failed to send prize BNB in smash lottery");
 
+            smashtimeLotteryBNBPrize -= untaxedPrize;
             totalAmountWonInSmashTimeLottery += prize;
             smashtimeRequestId[smashTimeWins] = _requestId;
             smashTimeWins += 1;
@@ -946,9 +974,9 @@ contract ABC is
         address winner = _holders.allTickets()[winnerIdx];
         uint256 prize = _calculateHoldersLotteryPrize();
 
-        _tokenTransfer(address(this), winner, prize, false);
-        holderRequestId[holdersLotteryWinTimes] = _requestId;
+        _tokenTransfer(holderLotteryPrizePoolAddress, winner, prize, false);
 
+        holderRequestId[holdersLotteryWinTimes] = _requestId;
         holdersLotteryWinTimes += 1;
         totalAmountWonInHoldersLottery += prize;
         _round.winner = winner;
@@ -969,9 +997,12 @@ contract ABC is
         address winner = _donators[winnerIdx];
         uint256 prize = _calculateDonationLotteryPrize();
 
-        _WBNB.transferFrom(donationLotteryPrizePoolAddress, winner, prize);
-        donationRequestId[donationLotteryWinTimes] = _requestId;
+        require(address(this).balance >= prize, "Insufficient balance");
+        (bool sent, ) = winner.call{value: prize}("");
+        require(sent, "Failed to send BNB");
 
+        donationLotteryBNBPrize -= prize;
+        donationRequestId[donationLotteryWinTimes] = _requestId;
         donationLotteryWinTimes += 1;
         totalAmountWonInDonationLottery += prize;
         _round.winner = winner;

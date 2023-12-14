@@ -45,7 +45,7 @@ const config: HardhatUserConfig = {
 	},
 	networks: {
 		bsc_testnet: {
-			url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+			url: "https://bsc-testnet.publicnode.com",
 			chainId: 97,
 			gasPrice: "auto",
 			accounts: { mnemonic: DEPLOYER_MNEMONIC }
