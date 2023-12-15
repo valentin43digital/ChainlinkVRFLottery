@@ -1058,6 +1058,9 @@ contract TestZ is
         uint256 idx = _donatorTicketIdxs[round][msg.sender][length - 1];
         _donatorTicketIdxs[round][msg.sender].pop();
         _donators[idx] = _to;
+        if (_donatorTicketIdxs[round][_to].length == 0) {
+            _uniqueDonatorsCounter++;
+        }
         _donatorTicketIdxs[round][_to].push(idx);
     }
 
