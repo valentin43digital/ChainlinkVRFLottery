@@ -92,9 +92,9 @@ contract TestZ is
 
     uint256 public liquiditySupplyThreshold = 1000 * 1e18; // TODO:  use real value
     uint256 public feeSupplyThreshold = 1000 * 1e18; // TODO:  use real value
-    uint256 private _tTotal = 10_000_000_000 * 1e18;
+    uint256 private _tTotal = 20_000_000_000 * 1e18;
     uint256 private _rTotal = (MAX_UINT256 - (MAX_UINT256 % _tTotal));
-    uint256 public maxTxAmount = 10_000_000_000 * 1e18;
+    uint256 public maxTxAmount = 20_000_000_000 * 1e18;
     uint256 public maxBuyPercent = 10_000;
     uint256 private _tFeeTotal;
 
