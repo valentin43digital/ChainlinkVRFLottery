@@ -107,7 +107,7 @@ contract TestZ is
     uint256 public totalAmountWonInSmashTimeLottery;
     uint256 public totalAmountWonInDonationLottery;
     uint256 public totalAmountWonInHoldersLottery;
-    // address public forwarderAddress;
+    address public forwarderAddress;
 
     struct LotteryRound {
         uint256 prize;
@@ -691,15 +691,11 @@ contract TestZ is
         return (false, bytes(""));
     }
 
-    // function setForwarderAddress(address _forwarderAddress) external onlyOwner {
-    //     forwarderAddress = _forwarderAddress;
-    // }
-
     function performUpkeep(bytes calldata performData) external override {
-        // require(
-        //     msg.sender == forwarderAddress,
-        //     "This address does not have permission to call performUpkeep"
-        // );
+        require(
+            msg.sender == forwarderAddress,
+            "This address does not have permission to call performUpkeep"
+        );
         uint256 tasks = abi.decode(performData, (uint256));
 
         if (tasks & 1 != 0) {
@@ -1151,6 +1147,10 @@ contract TestZ is
     }
 
     // Set functoins
+    function setForwarderAddress(address _forwarderAddress) external onlyOwner {
+        forwarderAddress = _forwarderAddress;
+    }
+
     function setWhitelist(address account, bool _status) external onlyOwner {
         whitelist[account] = _status;
     }
