@@ -996,8 +996,8 @@ contract TestZ is
             return;
         }
 
-        uint256 usdAmount = _TokenPriceInUSD(_amount) / 1e18; // TODO: use correct decimal for stable coin
-        uint256 hundreds = usdAmount / 100;
+        uint256 usdAmount = _TokenPriceInUSD(_amount) / 1e18;
+        uint256 hundreds = (usdAmount * 100) / _lotteryConfig.smashTimeLotteryTriggerThreshold; // TODO: remove 100
         if (hundreds == 0) {
             return;
         }

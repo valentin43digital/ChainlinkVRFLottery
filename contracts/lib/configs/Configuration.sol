@@ -143,6 +143,12 @@ abstract contract Configuration is
         _setSmashTimeLotteryConversionThreshold(_smashTimeLotteryConversionThreshold);
     }
 
+    function setSmashTimeLotteryTriggerThreshold(
+        uint256 _smashTimeLotteryTriggerThreshold
+    ) external onlyOwner {
+        _setSmashTimeLotteryTriggerThreshold(_smashTimeLotteryTriggerThreshold);
+    }
+
     function setFee(uint256 _fee) external onlyOwner {
         fee = _fee;
     }
@@ -197,6 +203,10 @@ abstract contract Configuration is
 
     function smashTimeLotteryConversionThreshold() external view returns (uint256) {
         return _lotteryConfig.smashTimeLotteryConversionThreshold;
+    }
+
+    function smashTimeLotteryTriggerThreshold() external view returns (uint256) {
+        return _lotteryConfig.smashTimeLotteryTriggerThreshold;
     }
 
     function holdersLotteryEnabled() external view returns (bool) {

@@ -11,10 +11,10 @@ async function main() {
     }
 
     const ConsumerConfig = {
-        subscriptionId: 3227, // TODO: use real value for mainnet
+        subscriptionId: 969, // TODO: use real value for mainnet
         callbackGasLimit: 2_500_000, // TODO: use real value for mainnet
         requestConfirmations: 3, // TODO: use real value for mainnet
-        gasPriceKey: "0xd4bb89654db74673a187bd804519e65e3f71a52bc55f11da7601a13dcf505314" // TODO: use real value for mainnet
+        gasPriceKey: "0xba6e730de88d94a5510ae6613898bfb0c3de5d16e609c5b7da808747125506f7" // TODO: use real value for mainnet
     }
 
     const ProtocolConfig = {
@@ -38,6 +38,7 @@ async function main() {
     const LotteryConfig = {
         smashTimeLotteryEnabled: true,
         smashTimeLotteryConversionThreshold: ethers.utils.parseEther("1000"), // TODO: use real value for mainnet
+        smashTimeLotteryTriggerThreshold: 1, // TODO: use real value for mainnet
         holdersLotteryEnabled: true,
         holdersLotteryTxTrigger: 5, // TODO: use real value for mainnet
         holdersLotteryMinPercent: 1, // TODO: use real value for mainnet

@@ -48,6 +48,10 @@ interface IConfiguration {
         uint256 _smashTimeLotteryConversionThreshold
     ) external;
 
+    function setSmashTimeLotteryTriggerThreshold(
+        uint256 _smashTimeLotteryTriggerThreshold
+    ) external;
+
     function setFee(uint256 _fee) external;
 
     function setMinimumDonationEntries(uint64 _minimumEntries) external;
@@ -75,6 +79,8 @@ interface IConfiguration {
     function smashTimeLotteryEnabled() external view returns (bool);
 
     function smashTimeLotteryConversionThreshold() external view returns (uint256);
+
+    function smashTimeLotteryTriggerThreshold() external view returns (uint256);
 
     function holdersLotteryEnabled() external view returns (bool);
 

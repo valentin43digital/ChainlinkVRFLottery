@@ -39,6 +39,7 @@ struct DistributionConfig {
 struct LotteryConfig {
     bool smashTimeLotteryEnabled;
     uint256 smashTimeLotteryConversionThreshold;
+    uint256 smashTimeLotteryTriggerThreshold;
     bool holdersLotteryEnabled;
     uint64 holdersLotteryTxTrigger;
     uint256 holdersLotteryMinPercent;

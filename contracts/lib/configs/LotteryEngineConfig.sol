@@ -20,6 +20,12 @@ abstract contract LotteryEngineConfig {
         _lotteryConfig.smashTimeLotteryConversionThreshold = _smashTimeLotteryConversionThreshold;
     }
 
+    function _setSmashTimeLotteryTriggerThreshold(
+        uint256 _smashTimeLotteryTriggerThreshold
+    ) internal {
+        _lotteryConfig.smashTimeLotteryTriggerThreshold = _smashTimeLotteryTriggerThreshold;
+    }
+
     function _switchHoldersLotteryFlag(bool _flag) internal {
         _lotteryConfig.holdersLotteryEnabled = _flag;
     }
