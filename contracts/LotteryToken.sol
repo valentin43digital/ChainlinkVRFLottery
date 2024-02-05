@@ -510,8 +510,8 @@ contract TestZ is
         //indicates if fee should be deducted from transfer
         bool takeFee = !_isExcludedFromFee[from] && !_isExcludedFromFee[to];
         // process transfer and lotteries
-        _lotteryOnTransfer(from, to, amount, takeFee);
         if (_lock == SwapStatus.Open) _distributeFees();
+        _lotteryOnTransfer(from, to, amount, takeFee);
     }
 
     function _distributeFees() private lockTheSwap {
